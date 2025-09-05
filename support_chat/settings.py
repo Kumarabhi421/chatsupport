@@ -16,7 +16,7 @@ SECRET_KEY = 'django-insecure-9f_6ap0r9l$4057)bnc()jinmk&l&n)m7f8s&a=+g75^fva2q^
 DEBUG = True
 
 ALLOWED_HOSTS = [
-    "chatsupport-1.onrender.com",  # 👈 aapka Render app URL
+    "https://chatsupport-ruq6.onrender.com",  # 👈 aapka Render app URL
     "localhost",
     "127.0.0.1"
 ]
