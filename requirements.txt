@@ -7,5 +7,7 @@ channels
 django-crispy-forms
 redis
 mysqlclient==2.2.7
+gunicorn
+
 
 
