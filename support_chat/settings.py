@@ -17,6 +17,7 @@ DEBUG = os.getenv("DEBUG", "True") == "True"
 # Render har deploy pe alag domain deta hai, safest option:
 ALLOWED_HOSTS = ["*"]
 
+
 # Render CSRF trusted origin
 CSRF_TRUSTED_ORIGINS = [
     "https://chatsupport-1.onrender.com",
