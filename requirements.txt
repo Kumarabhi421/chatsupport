@@ -6,4 +6,6 @@ django-cors-headers
 channels
 django-crispy-forms
 redis
-mysqlclient-2.2.7
+mysqlclient==2.2.7
+
+
