@@ -15,13 +15,15 @@ SECRET_KEY = os.getenv("SECRET_KEY", "django-insecure-dev-key")
 DEBUG = os.getenv("DEBUG", "True") == "True"
 
 # Render har deploy pe alag domain deta hai, safest option:
-ALLOWED_HOSTS = ["*"]
+ALLOWED_HOSTS = [
+    "chatsupport-ruq6.onrender.com",   # <- Render URL
+    "localhost",
+    "127.0.0.1"
+]
 
-
-# Render CSRF trusted origin
+# CSRF trusted origins (needed for Django 4+ when using HTTPS)
 CSRF_TRUSTED_ORIGINS = [
-    "https://chatsupport-1.onrender.com",
-    "https://chatsupport-ruq6.onrender.com",
+    "https://chatsupport-ruq6.onrender.com"
 ]
 
 # ================================
