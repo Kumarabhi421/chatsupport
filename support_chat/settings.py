@@ -2,28 +2,33 @@ from pathlib import Path
 import os
 import random
 import string
+import dj_database_url
 
-# Build paths inside the project like this: BASE_DIR / 'subdir'.
+# ================================
+# PATHS
+# ================================
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # ================================
 # SECURITY
 # ================================
-SECRET_KEY = os.getenv("SECRET_KEY", "django-insecure-dev-key")
+SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", "django-insecure-dev-key")
 
 # Production me DEBUG False rakho
-DEBUG = os.getenv("DEBUG", "True") == "True"
+DEBUG = os.getenv("DEBUG", "False") == "True"
 
-# Render har deploy pe alag domain deta hai, safest option:
+# Render app hostname
+RENDER_HOSTNAME = "chatsupport-ruq6.onrender.com"
+
 ALLOWED_HOSTS = [
-    "chatsupport-ruq6.onrender.com",   # <- Render URL
+    RENDER_HOSTNAME,
     "localhost",
     "127.0.0.1"
 ]
 
 # CSRF trusted origins (needed for Django 4+ when using HTTPS)
 CSRF_TRUSTED_ORIGINS = [
-    "https://chatsupport-ruq6.onrender.com"
+    f"https://{RENDER_HOSTNAME}"
 ]
 
 # ================================
@@ -43,13 +48,14 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
-    'django.middleware.security.SecurityMiddleware',
-    'django.contrib.sessions.middleware.SessionMiddleware',
-    'django.middleware.common.CommonMiddleware',
-    'django.middleware.csrf.CsrfViewMiddleware',
-    'django.contrib.auth.middleware.AuthenticationMiddleware',
-    'django.contrib.messages.middleware.MessageMiddleware',
-    'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    "django.middleware.security.SecurityMiddleware",
+    "whitenoise.middleware.WhiteNoiseMiddleware",  # ✅ whitenoise added
+    "django.contrib.sessions.middleware.SessionMiddleware",
+    "django.middleware.common.CommonMiddleware",
+    "django.middleware.csrf.CsrfViewMiddleware",
+    "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "django.contrib.messages.middleware.MessageMiddleware",
+    "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
 
 ROOT_URLCONF = 'support_chat.urls'
@@ -73,21 +79,14 @@ TEMPLATES = [
 WSGI_APPLICATION = 'support_chat.wsgi.application'
 
 # ================================
-# DATABASE
+# DATABASE (Render PostgreSQL)
 # ================================
-# Local MySQL (for development) – Render ke liye DATABASE_URL use karna better hai
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.mysql',
-        'NAME': os.getenv("DB_NAME", "mychatdb"),
-        'USER': os.getenv("DB_USER", "root"),
-        'PASSWORD': os.getenv("DB_PASSWORD", "1234"),
-        'HOST': os.getenv("DB_HOST", "localhost"),
-        'PORT': os.getenv("DB_PORT", "3306"),
-        'OPTIONS': {
-            'charset': 'utf8mb4',
-        }
-    }
+    "default": dj_database_url.config(
+        default=os.getenv("DATABASE_URL"),  # Render env var
+        conn_max_age=600,
+        ssl_require=True
+    )
 }
 
 # ================================
@@ -109,10 +108,12 @@ USE_I18N = True
 USE_TZ = True
 
 # ================================
-# STATIC FILES
+# STATIC FILES (Whitenoise)
 # ================================
 STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR / "staticfiles"
+
+STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 
 # ================================
 # DEFAULT PRIMARY KEY
@@ -120,6 +121,6 @@ STATIC_ROOT = BASE_DIR / "staticfiles"
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # ================================
-# SERVER RUN ID (NEW PART)
+# SERVER RUN ID
 # ================================
 SERVER_RUN_ID = ''.join(random.choices(string.ascii_letters + string.digits, k=12))
