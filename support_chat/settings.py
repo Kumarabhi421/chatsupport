@@ -82,12 +82,16 @@ WSGI_APPLICATION = 'support_chat.wsgi.application'
 # DATABASE (Render PostgreSQL)
 # ================================
 DATABASES = {
-    "default": dj_database_url.config(
-        default=os.getenv("DATABASE_URL"),  # Render env var
-        conn_max_age=600,
-        ssl_require=True
-    )
+    'default': {
+        'ENGINE': 'django.db.backends.postgresql',  # PostgreSQL use ho raha hai
+        'NAME': 'chatsupport_db',
+        'USER': 'chatsupport_db_user',
+        'PASSWORD': 'Mbkcr08iVLof4LB86nYUanljnKRodZwd',
+        'HOST': 'dpg-d2tsqgruibrs73f3qd30-a.render.com',  # hostname ko proper format me add karein
+        'PORT': '5432',  # PostgreSQL ka default port
+    }
 }
+
 
 # ================================
 # PASSWORD VALIDATION
