@@ -2,7 +2,6 @@ from pathlib import Path
 import os
 import random
 import string
-import dj_database_url
 
 # ================================
 # PATHS
@@ -14,7 +13,6 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # ================================
 SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", "django-insecure-dev-key")
 
-# Production me DEBUG False rakho
 DEBUG = os.getenv("DEBUG", "False") == "True"
 
 # Render app hostname
@@ -23,10 +21,10 @@ RENDER_HOSTNAME = "chatsupport-ruq6.onrender.com"
 ALLOWED_HOSTS = [
     RENDER_HOSTNAME,
     "localhost",
-    "127.0.0.1"
+    "127.0.0.1",
 ]
 
-# CSRF trusted origins (needed for Django 4+ when using HTTPS)
+# CSRF trusted origins (for HTTPS)
 CSRF_TRUSTED_ORIGINS = [
     f"https://{RENDER_HOSTNAME}"
 ]
@@ -41,6 +39,8 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+
+    # Your apps
     'chat',
     'corsheaders',
     'rest_framework',
@@ -49,7 +49,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
-    "whitenoise.middleware.WhiteNoiseMiddleware",  # ✅ whitenoise added
+    "whitenoise.middleware.WhiteNoiseMiddleware",  # Serve static files
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
@@ -83,15 +83,14 @@ WSGI_APPLICATION = 'support_chat.wsgi.application'
 # ================================
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.postgresql',  # PostgreSQL use ho raha hai
+        'ENGINE': 'django.db.backends.postgresql',
         'NAME': 'chatsupport_db',
         'USER': 'chatsupport_db_user',
         'PASSWORD': 'Mbkcr08iVLof4LB86nYUanljnKRodZwd',
-        'HOST': 'dpg-d2tsqgruibrs73f3qd30-a.render.com',  # hostname ko proper format me add karein
-        'PORT': '5432',  # PostgreSQL ka default port
+        'HOST': 'dpg-d2tsqgruibrs73f3qd30-a.render.com',
+        'PORT': '5432',
     }
 }
-
 
 # ================================
 # PASSWORD VALIDATION
@@ -125,6 +124,6 @@ STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # ================================
-# SERVER RUN ID
+# SERVER RUN ID (optional)
 # ================================
 SERVER_RUN_ID = ''.join(random.choices(string.ascii_letters + string.digits, k=12))
