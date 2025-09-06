@@ -8,6 +8,11 @@ django-crispy-forms
 redis
 mysqlclient==2.2.7
 gunicorn
+dj-database-url
+psycopg2-binary
+whitenoise
+
+
 
 
 
