@@ -84,13 +84,17 @@ WSGI_APPLICATION = 'support_chat.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'chatsupport_db',            # Database Name
-        'USER': 'chatsupport_db_user',       # Database Username
-        'PASSWORD': 'Mbkcr08iVLof4LB86nYUanljnKRodZwd',  # Password
-        'HOST': 'dpg-d2tsqgruibrs73f3qd30-a.oregon-postgres.render.com', # External Hostname
-        'PORT': '5432',
+        'NAME': 'chatsupport_db',   # DB name
+        'USER': 'chatsupport_db_user',   # DB user
+        'PASSWORD': 'Mbkcr08iVLof4LB86nYUanljnKRodZwd',   # Password
+        'HOST': 'dpg-d2tsqgruibrs73f3qd30-a.oregon-postgres.render.com',   # Host
+        'PORT': '5432',   # PostgreSQL default port
+        'OPTIONS': {
+            'sslmode': 'require',   # Render DB needs SSL
+        },
     }
 }
+
 
 
 # ================================
