@@ -1,4 +1,3 @@
-
 # from django.shortcuts import render
 # from django.views.decorators.csrf import csrf_exempt
 # from django.core.validators import validate_email
@@ -20,61 +19,7 @@
 
 # RESPONSES = {
 #     # ===== GREETINGS =====
-#     "hello": "Hello! Welcome to Urgent IT Solution. How can we assist you today?",
-#     "hi": "Hi there! Urgent IT Solution at your service—what can we do for you?",
-#     "hey": "Hey! You’ve reached Urgent IT Solution—how can we help?",
-#     "good morning": "Good morning! How can we help you today?",
-#     "good afternoon": "Good afternoon! How can we assist you right now?",
-#     "good evening": "Good evening! What IT support can we offer this evening?",
-
-#     # ===== GOODBYE =====
-#     "bye": "Goodbye! Have a great day.",
-#     "goodbye": "Hope to talk to you soon! 😊",
-
-#     # ===== CONTACT & SUPPORT =====
-#     "call support": "Feel free to contact our support via phone or WhatsApp at +91 7408142576.",
-#     "support": "We provide 24/7 technical support. Please describe your issue and we’ll be right on it.",
-#     "cont": "Reach us at +91 7408142576 or urgentitsolution@gmail.com",
-#     "call": "Feel free to contact our support via phone or WhatsApp...",
-#     "email": "You can email us at urgentitsolution@gmail.com",
-#     "location": "Our main office is in Noida, Uttar Pradesh, India. We serve clients across the country.",
-#     "hours": "We are available 24/7. You can reach us anytime.",
-#     "emergency": "If it’s urgent, please contact our support number immediately.",
-
-#     # ===== SERVICES =====
-#     "services": "We specialize in Web Design, Digital Marketing, Mobile App Development, and Custom Software Solutions.",
-#     "website": "Yes, we build responsive websites, landing pages, and e-commerce platforms tailored for businesses of all sizes.",
-#     "website designing": "We provide professional, mobile-friendly website designing services at affordable prices.",
-#     "seo": "Yes, we provide SEO optimization services to improve your website's ranking.",
-#     "digital marketing": "We offer SEO, SEM, Social Media Marketing (SMM), and PPC services.",
-#     "branding": "We offer logo design, branding, and identity services for your company.",
-#     "hosting": "We provide fast and secure web hosting for all our clients.",
-#     "portfolio": "Check out our projects here: https://urgentitsolution.com/portfolio",
-#     "software": "We develop custom software and mobile/web applications trusted for quality and affordability.",
-#     "app development": "We provide mobile and web app development tailored to your business needs.",
-
-#     # ===== ABOUT & COURSES =====
-#     "about": "Urgent IT Solution is a trusted IT and digital marketing company based in Noida, delivering affordable, high-quality solutions across India.",
-#     "courses": "We offer placement-oriented courses in Digital Marketing, Web Development, and related areas.",
-#     "placement": "We provide career-oriented IT courses with placement assistance.",
-
-#     # ===== QUOTES & PAYMENTS =====
-#     "pricing": "Pricing depends on project complexity. Please contact us for a customized quote.",
-#     "quote": "To get a quote, please provide details of your project requirements.",
-#     "payment": "We accept payments via Bank Transfer, UPI, and PayPal.",
-
-#     # ===== ISSUES & TECH HELP =====
-#     "bug": "We can help fix bugs. Please provide the details of the issue.",
-#     "issue": "Sorry to hear that. Can you explain the problem?",
-#     "update": "We regularly update our software for security and new features.",
-#     "maintenance": "Scheduled maintenance happens on weekends. We notify users beforehand.",
-#     "login": "If you're facing login issues, try resetting your password.",
-#     "signup": "Sign up using your email or mobile number.",
-#     "reset password": "To reset your password, click on 'Forgot Password' at login.",
-
-#     # ===== THANKS =====
-#     "thank you": "You're welcome! 😊",
-#     "thanks": "No problem at all—we're here to help.",
+   
 
 #     # ===== PROMPTS / EXTRAS =====
 #     "consultation": "Would you like to schedule a free consultation to discuss your project?",
@@ -121,6 +66,55 @@
 
 #     return mobile, email
 
+# # ================== GEO LOCATION (IP → City/Country) ==================
+# # Uses: django-ipware + geoip2. Falls back gracefully if DB not available.
+# from django.conf import settings
+# try:
+#     from ipware import get_client_ip
+# except Exception:
+#     # Minimal fallback if ipware not installed (still works, less accurate)
+#     def get_client_ip(request):
+#         return request.META.get("HTTP_X_FORWARDED_FOR", request.META.get("REMOTE_ADDR")), True
+
+# try:
+#     import geoip2.database
+#     _GEOIP_READER = None
+# except Exception:
+#     geoip2 = None
+#     _GEOIP_READER = None
+
+# def _get_geo_from_ip(ip: str):
+#     """
+#     Returns dict: {"ip", "country", "city", "lat", "lon"}
+#     If lookup fails, returns keys with None (ip included).
+#     """
+#     if not ip or ip == "unknown":
+#         return {"ip": ip, "country": None, "city": None, "lat": None, "lon": None}
+
+#     # If geoip2 not available or DB path missing, fail soft
+#     if geoip2 is None:
+#         return {"ip": ip, "country": None, "city": None, "lat": None, "lon": None}
+
+#     global _GEOIP_READER
+#     try:
+#         if _GEOIP_READER is None:
+#             db_path = getattr(settings, "GEOIP_DB_PATH", None)
+#             if not db_path:
+#                 # try a common fallback path; still safe if not present
+#                 db_path = "/usr/local/share/GeoIP/GeoLite2-City.mmdb"
+#             _GEOIP_READER = geoip2.database.Reader(str(db_path))
+
+#         resp = _GEOIP_READER.city(ip)
+#         return {
+#             "ip": ip,
+#             "country": resp.country.name,
+#             "city": resp.city.name,
+#             "lat": resp.location.latitude,
+#             "lon": resp.location.longitude,
+#         }
+#     except Exception:
+#         return {"ip": ip, "country": None, "city": None, "lat": None, "lon": None}
+
 # # ================= VIEWS =================
 # def chat_view(request):
 #     return render(request, 'chat.html')
@@ -130,10 +124,10 @@
 #     return render(request, 'chat/admin_panel.html', {"contacts": contacts})
 
 # # ================= SSE STREAM =================
-# subscribers_ = set()
+# subscribers_admin = set()
 # subscribers_user = {}
 
-# def _broadcast_(payload: dict):
+# def _broadcast_admin(payload: dict):
 #     dead = []
 #     for q in list(subscribers_admin):
 #         try:
@@ -234,7 +228,12 @@
 
 #     user_message = (data.get('message') or "").strip()
 #     sender = (data.get('sender') or 'user').lower()
-#     user_ip = request.META.get("REMOTE_ADDR", "unknown")
+
+#     # --- IP + GEO (added) ---
+#     client_ip, _ = get_client_ip(request)
+#     user_ip = client_ip or request.META.get("REMOTE_ADDR", "unknown")
+#     geo = _get_geo_from_ip(user_ip)
+#     request.session["user_geo"] = geo  # handy for templates or later use
 
 #     contact = _get_or_create_contact(request, user_ip)
 
@@ -248,6 +247,8 @@
 #             "sender": sender,
 #             "text": user_message,
 #             "timestamp": msg.timestamp.strftime("%Y-%m-%d %H:%M"),
+#             # --- GEO included in SSE to admin (added) ---
+#             "geo": geo,
 #         }
 #         _broadcast_admin(payload_user)
 
@@ -287,6 +288,8 @@
 #         "sender": "bot",
 #         "text": reply,
 #         "timestamp": bot_msg.timestamp.strftime("%Y-%m-%d %H:%M"),
+#         # --- GEO included for both admin + user streams (added) ---
+#         "geo": geo,
 #     }
 #     _broadcast_admin(payload_bot)
 #     _broadcast_user(contact.id, payload_bot)
@@ -294,7 +297,9 @@
 #     return JsonResponse({
 #         "reply": reply,
 #         "contact_id": contact.id,
-#         "token": f"TKN-{contact.id}"
+#         "token": f"TKN-{contact.id}",
+#         # --- GEO included in API response (added) ---
+#         "geo": geo,
 #     })
 
 # # ================= ADMIN REPLY =================
@@ -332,6 +337,13 @@
 #         return JsonResponse({"error": "Contact not found"}, status=404)
 
 #     msg = Message.objects.create(sender="admin", text=message, contact=contact)
+#     # try to attach last known geo from session if available (non-blocking)
+#     geo = None
+#     try:
+#         geo = getattr(request, "session", {}).get("user_geo")
+#     except Exception:
+#         geo = None
+
 #     payload = {
 #         "id": msg.id,
 #         "contact_id": contact.id,
@@ -339,6 +351,8 @@
 #         "sender": "admin",
 #         "text": message,
 #         "timestamp": msg.timestamp.strftime("%Y-%m-%d %H:%M"),
+#         # --- GEO included in SSE to user + admin (added) ---
+#         "geo": geo,
 #     }
 #     _broadcast_user(contact.id, payload)
 #     _broadcast_admin(payload)
@@ -369,7 +383,12 @@
 #     except json.JSONDecodeError:
 #         contact_value, contact_type = None, "temp"
 
-#     user_ip = request.META.get("REMOTE_ADDR", "unknown")
+#     # --- IP + GEO (added) ---
+#     client_ip, _ = get_client_ip(request)
+#     user_ip = client_ip or request.META.get("REMOTE_ADDR", "unknown")
+#     geo = _get_geo_from_ip(user_ip)
+#     request.session["user_geo"] = geo
+
 #     contact = _get_or_create_contact(request, user_ip)
 
 #     if contact_value:
@@ -382,7 +401,13 @@
 #         contact.save()
 #         request.session["contact_saved"] = True
 
-#     return JsonResponse({"status": "success", "id": contact.id, "token": f"TKN-{contact.id}"})
+#     return JsonResponse({
+#         "status": "success",
+#         "id": contact.id,
+#         "token": f"TKN-{contact.id}",
+#         # --- GEO included in API response (added) ---
+#         "geo": geo,
+#     })
 
 # def get_contacts(request):
 #     contacts_qs = ContactInfo.objects.all().order_by("-created_at").values(
@@ -406,10 +431,18 @@
 #             }
 #             for msg in messages
 #         ]
+#         # also return last known geo from session if present
+#         geo = None
+#         try:
+#             geo = request.session.get("user_geo")
+#         except Exception:
+#             geo = None
+
 #         return JsonResponse({
 #             "messages": data,
 #             "token": f"TKN-{contact.id}",
-#             "token_number": contact.token_number
+#             "token_number": contact.token_number,
+#             "geo": geo,  # (added)
 #         })
 #     except ContactInfo.DoesNotExist:
 #         return JsonResponse({"error": "Contact not found"}, status=404)
@@ -487,8 +520,6 @@
 
 
 
-
-
 from django.shortcuts import render
 from django.views.decorators.csrf import csrf_exempt
 from django.core.validators import validate_email
@@ -506,15 +537,17 @@ from .models import Message, ContactInfo
 from .serializers import MessageSerializer
 
 # ================= KEYWORD BOT =================
-import difflib
-
 RESPONSES = {
     # ===== GREETINGS =====
-   
+    "hello": "Hello! How can I assist you today?",
+    "hi": "Hi there! How can I help you?",
+    "hey": "Hey! What can I do for you?",
 
     # ===== PROMPTS / EXTRAS =====
     "consultation": "Would you like to schedule a free consultation to discuss your project?",
     "promotion": "Interested in boosting your business online? Ask us about our digital marketing plans!",
+
+    # ===== DEFAULT =====
     "default": "Sorry, I didn't understand that. Can you please rephrase your question?"
 }
 
@@ -557,13 +590,13 @@ def extract_contact_info(text: str):
 
     return mobile, email
 
+
 # ================== GEO LOCATION (IP → City/Country) ==================
-# Uses: django-ipware + geoip2. Falls back gracefully if DB not available.
 from django.conf import settings
 try:
     from ipware import get_client_ip
 except Exception:
-    # Minimal fallback if ipware not installed (still works, less accurate)
+    # Minimal fallback if ipware not installed
     def get_client_ip(request):
         return request.META.get("HTTP_X_FORWARDED_FOR", request.META.get("REMOTE_ADDR")), True
 
@@ -582,7 +615,6 @@ def _get_geo_from_ip(ip: str):
     if not ip or ip == "unknown":
         return {"ip": ip, "country": None, "city": None, "lat": None, "lon": None}
 
-    # If geoip2 not available or DB path missing, fail soft
     if geoip2 is None:
         return {"ip": ip, "country": None, "city": None, "lat": None, "lon": None}
 
@@ -591,7 +623,6 @@ def _get_geo_from_ip(ip: str):
         if _GEOIP_READER is None:
             db_path = getattr(settings, "GEOIP_DB_PATH", None)
             if not db_path:
-                # try a common fallback path; still safe if not present
                 db_path = "/usr/local/share/GeoIP/GeoLite2-City.mmdb"
             _GEOIP_READER = geoip2.database.Reader(str(db_path))
 
@@ -606,6 +637,7 @@ def _get_geo_from_ip(ip: str):
     except Exception:
         return {"ip": ip, "country": None, "city": None, "lat": None, "lon": None}
 
+
 # ================= VIEWS =================
 def chat_view(request):
     return render(request, 'chat.html')
@@ -613,6 +645,7 @@ def chat_view(request):
 def admin_panel_view(request):
     contacts = ContactInfo.objects.prefetch_related("messages").all().order_by("-created_at")
     return render(request, 'chat/admin_panel.html', {"contacts": contacts})
+
 
 # ================= SSE STREAM =================
 subscribers_admin = set()
@@ -679,6 +712,7 @@ def user_stream(request, contact_id):
     resp["Cache-Control"] = "no-cache"
     return resp
 
+
 # ================= CONTACT / CHAT LOGIC =================
 SERVER_START_TIME = timezone.now()
 
@@ -706,6 +740,7 @@ def _get_or_create_contact(request, user_ip: str) -> ContactInfo:
 
     return contact
 
+
 # ================= CHAT API =================
 @csrf_exempt
 def get_response(request):
@@ -720,11 +755,11 @@ def get_response(request):
     user_message = (data.get('message') or "").strip()
     sender = (data.get('sender') or 'user').lower()
 
-    # --- IP + GEO (added) ---
+    # --- IP + GEO ---
     client_ip, _ = get_client_ip(request)
     user_ip = client_ip or request.META.get("REMOTE_ADDR", "unknown")
     geo = _get_geo_from_ip(user_ip)
-    request.session["user_geo"] = geo  # handy for templates or later use
+    request.session["user_geo"] = geo
 
     contact = _get_or_create_contact(request, user_ip)
 
@@ -738,7 +773,6 @@ def get_response(request):
             "sender": sender,
             "text": user_message,
             "timestamp": msg.timestamp.strftime("%Y-%m-%d %H:%M"),
-            # --- GEO included in SSE to admin (added) ---
             "geo": geo,
         }
         _broadcast_admin(payload_user)
@@ -779,7 +813,6 @@ def get_response(request):
         "sender": "bot",
         "text": reply,
         "timestamp": bot_msg.timestamp.strftime("%Y-%m-%d %H:%M"),
-        # --- GEO included for both admin + user streams (added) ---
         "geo": geo,
     }
     _broadcast_admin(payload_bot)
@@ -789,9 +822,9 @@ def get_response(request):
         "reply": reply,
         "contact_id": contact.id,
         "token": f"TKN-{contact.id}",
-        # --- GEO included in API response (added) ---
         "geo": geo,
     })
+
 
 # ================= ADMIN REPLY =================
 @csrf_exempt
@@ -828,7 +861,6 @@ def admin_reply(request):
         return JsonResponse({"error": "Contact not found"}, status=404)
 
     msg = Message.objects.create(sender="admin", text=message, contact=contact)
-    # try to attach last known geo from session if available (non-blocking)
     geo = None
     try:
         geo = getattr(request, "session", {}).get("user_geo")
@@ -842,7 +874,6 @@ def admin_reply(request):
         "sender": "admin",
         "text": message,
         "timestamp": msg.timestamp.strftime("%Y-%m-%d %H:%M"),
-        # --- GEO included in SSE to user + admin (added) ---
         "geo": geo,
     }
     _broadcast_user(contact.id, payload)
@@ -850,12 +881,12 @@ def admin_reply(request):
 
     return JsonResponse({"status": "success", "message": "Sent", "token": f"TKN-{contact.id}"})
 
-admin_send_message = admin_reply
 
 # ================= MESSAGES API =================
 class MessageListCreateView(generics.ListCreateAPIView):
     queryset = Message.objects.all().order_by('-timestamp')
     serializer_class = MessageSerializer
+
 
 # ================= CONTACT API =================
 @csrf_exempt
@@ -874,7 +905,6 @@ def save_contact(request):
     except json.JSONDecodeError:
         contact_value, contact_type = None, "temp"
 
-    # --- IP + GEO (added) ---
     client_ip, _ = get_client_ip(request)
     user_ip = client_ip or request.META.get("REMOTE_ADDR", "unknown")
     geo = _get_geo_from_ip(user_ip)
@@ -896,7 +926,6 @@ def save_contact(request):
         "status": "success",
         "id": contact.id,
         "token": f"TKN-{contact.id}",
-        # --- GEO included in API response (added) ---
         "geo": geo,
     })
 
@@ -922,7 +951,6 @@ def get_messages(request, contact_id):
             }
             for msg in messages
         ]
-        # also return last known geo from session if present
         geo = None
         try:
             geo = request.session.get("user_geo")
@@ -933,17 +961,17 @@ def get_messages(request, contact_id):
             "messages": data,
             "token": f"TKN-{contact.id}",
             "token_number": contact.token_number,
-            "geo": geo,  # (added)
+            "geo": geo,
         })
     except ContactInfo.DoesNotExist:
         return JsonResponse({"error": "Contact not found"}, status=404)
+
 
 # ================= STATS API =================
 def stats(request):
     total_contacts = ContactInfo.objects.count()
     total_messages = Message.objects.count()
     total_visitors = ContactInfo.objects.values("contact_value").distinct().count()
-
     total_chats = Message.objects.values("contact_id").distinct().count()
 
     page_views_agg = ContactInfo.objects.aggregate(total=Sum('page_views'))
@@ -993,7 +1021,6 @@ def stats(request):
         "total_chats": total_chats,
         "page_views_total": total_pageviews,
         "feedback_percent": feedback_percent,
-
         "contacts": total_contacts,
         "messages": total_messages,
         "sender_stats": sender_stats,
