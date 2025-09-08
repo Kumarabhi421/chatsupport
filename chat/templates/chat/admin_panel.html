@@ -5,21 +5,32 @@
   <title>Admin Panel</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
   <style>  
     body { background: #f4f6f9; margin:0; font-family:Segoe UI,Tahoma; }
     .sidebar {
       height: 100vh; width: 250px;
       background: #111827; color: #fff; position: fixed;
-      padding: 20px; overflow-y:auto;
+      padding: 20px; overflow-y:auto; transition: all 0.3s ease;
     }
-    .sidebar h2 { font-size: 1.2rem; margin-bottom: 20px; }
+    .sidebar.collapsed { width: 70px; }
+    .sidebar h2 { font-size: 1.2rem; margin-bottom: 20px; white-space:nowrap; }
     .sidebar a {
-      display: block; color: #fff; padding: 10px;
+      display: flex; align-items:center; gap:10px;
+      color: #fff; padding: 10px;
       text-decoration: none; margin-bottom: 10px; border-radius: 6px;
+      font-size: 0.95rem;
     }
     .sidebar a:hover { background: #1f2937; }
-    .main-content { margin-left: 260px; padding: 20px; }
-    .card { border-radius: 12px; box-shadow: 0 2px 6px rgba(0,0,0,.1); }
+    .main-content { margin-left: 260px; padding: 20px; transition: margin-left 0.3s; }
+    .collapsed ~ .main-content { margin-left: 80px; }
+    .card { 
+      border-radius: 14px; 
+      box-shadow: 0 4px 10px rgba(0,0,0,.08); 
+      transition: transform .2s;
+    }
+    .card:hover { transform: translateY(-4px); }
+    .stat-icon { font-size: 1.5rem; opacity:0.8; }
     .chat-box {
       height: 400px; overflow-y: auto; background: #fff; padding: 15px;
       border-radius: 12px; box-shadow: 0 2px 6px rgba(0,0,0,.1);
@@ -32,20 +43,23 @@
       cursor:pointer; font-size:0.9rem;
     }
     .lead-item:hover { background:#374151; }
+    .toggle-btn { cursor:pointer; font-size:1.3rem; margin-bottom:20px; display:inline-block; }
+    .loading { text-align:center; padding:20px; font-size:0.9rem; color:#555; }
   </style>
 </head>
 <body>
   <!-- Sidebar -->
-  <div class="sidebar">
+  <div class="sidebar" id="sidebar">
+    <span class="toggle-btn text-white" onclick="toggleSidebar()"><i class="bi bi-list"></i></span>
     <h2>Admin Panel</h2>
-    <a href="#">Dashboard</a>
-    <a href="#">Visitors</a>
-    <a href="#">Chats</a>
-    <a href="#">Page Views</a>
-    <a href="#">Settings</a>
+    <a href="#"><i class="bi bi-speedometer2"></i><span>Dashboard</span></a>
+    <a href="#"><i class="bi bi-people"></i><span>Visitors</span></a>
+    <a href="#"><i class="bi bi-chat-dots"></i><span>Chats</span></a>
+    <a href="#"><i class="bi bi-bar-chart"></i><span>Page Views</span></a>
+    <a href="#"><i class="bi bi-gear"></i><span>Settings</span></a>
     <hr>
     <h6>Leads</h6>
-    <div id="leadList"></div>
+    <div id="leadList"><div class="loading">Loading leads...</div></div>
   </div>
 
   <!-- Main Content -->
@@ -53,60 +67,80 @@
     <h3 class="mb-4">Dashboard Overview</h3>
     
     <!-- Stats Cards -->
-    <div class="row mb-4">
+    <div class="row mb-4 g-3">
       <div class="col-md-3">
-        <div class="card p-3">
-          <h6>Total Visitors</h6>
-          <h3 id="visitorsCount">0</h3>
+        <div class="card p-3 bg-light">
+          <div class="d-flex justify-content-between align-items-center">
+            <div>
+              <h6>Total Visitors</h6>
+              <h3 id="visitorsCount">0</h3>
+            </div>
+            <i class="bi bi-person-lines-fill stat-icon text-primary"></i>
+          </div>
         </div>
       </div>
       <div class="col-md-3">
-        <div class="card p-3">
-          <h6>Active Chats</h6>
-          <h3 id="chatsCount">0</h3>
+        <div class="card p-3 bg-light">
+          <div class="d-flex justify-content-between align-items-center">
+            <div>
+              <h6>Active Chats</h6>
+              <h3 id="chatsCount">0</h3>
+            </div>
+            <i class="bi bi-chat-left-text-fill stat-icon text-success"></i>
+          </div>
         </div>
       </div>
       <div class="col-md-3">
-        <div class="card p-3">
-          <h6>Positive Feedback</h6>
-          <h3 id="feedbackCount">0%</h3>
+        <div class="card p-3 bg-light">
+          <div class="d-flex justify-content-between align-items-center">
+            <div>
+              <h6>Positive Feedback</h6>
+              <h3 id="feedbackCount">0%</h3>
+            </div>
+            <i class="bi bi-hand-thumbs-up-fill stat-icon text-warning"></i>
+          </div>
         </div>
       </div>
       <div class="col-md-3">
-        <div class="card p-3">
-          <h6>Page Views</h6>
-          <h3 id="pageViewsCount">0</h3>
+        <div class="card p-3 bg-light">
+          <div class="d-flex justify-content-between align-items-center">
+            <div>
+              <h6>Page Views</h6>
+              <h3 id="pageViewsCount">0</h3>
+            </div>
+            <i class="bi bi-eye-fill stat-icon text-danger"></i>
+          </div>
         </div>
       </div>
-      <!-- ✅ Location Card Added -->
-      <div class="col-md-3 mt-3">
-        <div class="card p-3">
-          <h6>Visitor Location</h6>
-          <h3 id="locationCard">Loading...</h3>
+      <!-- Location Card -->
+      <div class="col-md-3">
+        <div class="card p-3 bg-light">
+          <div class="d-flex justify-content-between align-items-center">
+            <div>
+              <h6>Visitor Location</h6>
+              <h3 id="locationCard">Loading...</h3>
+            </div>
+            <i class="bi bi-geo-alt-fill stat-icon text-info"></i>
+          </div>
         </div>
       </div>
     </div>
 
     <!-- Charts Row -->
-    <div class="row">
-      <!-- Visitors Chart -->
-      <div class="col-md-4 mb-4">
+    <div class="row g-3">
+      <div class="col-md-4">
         <div class="card p-3">
           <h6>Visitors Historical Data</h6>
           <canvas id="visitorsChart"></canvas>
         </div>
       </div>
-
-      <!-- Active Chats Chart -->
-      <div class="col-md-4 mb-4">
+      <div class="col-md-4">
         <div class="card p-3">
           <h6>Active Chats Historical Data</h6>
           <canvas id="chatsChart"></canvas>
         </div>
       </div>
-
-      <!-- Page Views Pie Chart -->
-      <div class="col-md-4 mb-4">
+      <div class="col-md-4">
         <div class="card p-3">
           <h6>Page Views Distribution</h6>
           <canvas id="pageViewsChart"></canvas>
@@ -115,81 +149,71 @@
     </div>
 
     <!-- Chat Box -->
-    <div class="row">
+    <div class="row mt-4">
       <div class="col-md-12">
         <div class="card p-3">
           <h6>Live Chat</h6>
           <div class="chat-box" id="chatBox">
-            <p>No messages yet.</p>
+            <div class="loading">No messages yet.</div>
           </div>
           <div class="d-flex mt-2">
             <input type="text" id="chatInput" class="form-control me-2" placeholder="Type a message...">
-            <button class="btn btn-primary" id="sendBtn">Send</button>
+            <button class="btn btn-primary" id="sendBtn"><i class="bi bi-send"></i> Send</button>
           </div>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- Chart Script + API Integration -->
+  <!-- Scripts -->
   <script>
+    function toggleSidebar(){
+      document.getElementById("sidebar").classList.toggle("collapsed");
+    }
+
     // ================== Stats & Graph Data ==================
     async function loadDashboardData(){
       try{
         const res = await fetch("/api/stats/");
         const data = await res.json();
 
-        // Update cards
         document.getElementById("visitorsCount").innerText = data.total_visitors || 0;
         document.getElementById("chatsCount").innerText = data.total_chats || 0;
         document.getElementById("feedbackCount").innerText = (data.feedback_percent || 0) + "%";
         document.getElementById("pageViewsCount").innerText = data.page_views_total || 0;
 
-        // Visitors Chart
-        new Chart(document.getElementById('visitorsChart').getContext('2d'), {
+        new Chart(document.getElementById('visitorsChart'), {
           type: 'bar',
           data: {
             labels: data.months || [],
-            datasets: [{
-              label: "Visitors",
-              data: data.visitors_data || [],
-              backgroundColor: "#2563eb"
-            }]
+            datasets: [{ label:"Visitors", data:data.visitors_data||[], backgroundColor:"#2563eb" }]
           },
           options:{responsive:true,scales:{y:{beginAtZero:true}}}
         });
 
-        // Chats Chart
-        new Chart(document.getElementById('chatsChart').getContext('2d'), {
+        new Chart(document.getElementById('chatsChart'), {
           type: 'bar',
           data: {
             labels: data.months || [],
-            datasets: [{
-              label: "Active Chats",
-              data: data.chats_data || [],
-              backgroundColor: "#10b981"
-            }]
+            datasets: [{ label:"Active Chats", data:data.chats_data||[], backgroundColor:"#10b981" }]
           },
           options:{responsive:true,scales:{y:{beginAtZero:true}}}
         });
 
-        // Page Views Pie (ensure data even if empty)
-        const pieData = (data.page_views_dist && data.page_views_dist.length) ? data.page_views_dist : [0,0,0,0,0];
-        new Chart(document.getElementById('pageViewsChart').getContext('2d'), {
+        // ✅ DEMO PIE CHART (hardcoded data)
+        const demoPieData = [25, 15, 20, 10, 30];
+        new Chart(document.getElementById('pageViewsChart'), {
           type: 'pie',
           data: {
             labels: ["Home","Products","About","Contact","Blog"],
-            datasets: [{
-              data: pieData,
-              backgroundColor: ["#2563eb","#10b981","#f59e0b","#ef4444","#8b5cf6"]
-            }]
+            datasets: [{ data: demoPieData, backgroundColor:["#2563eb","#10b981","#f59e0b","#ef4444","#8b5cf6"] }]
           },
           options:{responsive:true}
         });
       }catch(err){console.error("Dashboard load error:",err);}
     }
 
-    // ================== Location Data ==================
+    // ================== Location ==================
     async function loadLocation(){
       try{
         const res = await fetch("/api/location/");
@@ -201,18 +225,16 @@
         }
       }catch(err){
         document.getElementById("locationCard").innerText = "Error";
-        console.error("Location fetch error:",err);
       }
     }
 
     // ================== Chat Section ==================
     let currentContactId = null;
-
     const chatBox = document.getElementById("chatBox");
     const msgInput = document.getElementById("chatInput");
     const sendBtn = document.getElementById("sendBtn");
 
-    function appendMessage(sender,message,timestamp){
+    function appendMessage(sender,message){
       const div=document.createElement("div");
       div.className="msg "+(sender.toLowerCase()==="admin"?"admin":"user");
       div.innerHTML=`${message}`;
@@ -224,48 +246,42 @@
       currentContactId = contactId;
       fetch(`/api/messages/${contactId}/`).then(res=>res.json()).then(data=>{
         chatBox.innerHTML="";
-        if(!data.messages || data.messages.length===0){
-          chatBox.innerHTML="<p>No messages yet.</p>"; return;
+        if(!data.messages?.length){
+          chatBox.innerHTML="<div class='loading'>No messages yet.</div>"; return;
         }
-        data.messages.slice().reverse().forEach(m=>{
-          appendMessage(m.sender||"User", m.text||"", m.timestamp||"");
-        });
-      }).catch(err=>{
-        chatBox.innerHTML="<p>Error loading messages.</p>";
-        console.error(err);
+        data.messages.slice().reverse().forEach(m=>appendMessage(m.sender||"User", m.text||""));
       });
     }
 
     function sendMessage(){
       if(!currentContactId){ alert("Select a lead first"); return; }   
       const text=msgInput.value.trim(); if(!text) return;
-      appendMessage("Admin",text,"just now"); msgInput.value="";
+      appendMessage("Admin",text); msgInput.value="";
       fetch("/api/admin-send/",{
         method:"POST", headers:{"Content-Type":"application/json"},
         body:JSON.stringify({contact_id:currentContactId,message:text})
-      }).catch(err=>console.error("Send failed",err));
+      });
     }
     sendBtn.addEventListener("click",sendMessage);
     msgInput.addEventListener("keypress",e=>{ if(e.key==="Enter") sendMessage(); });
 
-    // SSE for live chat
     const evtSource=new EventSource("/api/lead-stream/");
     evtSource.onmessage=function(event){
       try{
         const data=JSON.parse(event.data||"{}");
         if(Number(data.contact_id)===Number(currentContactId)){
-          appendMessage(data.sender||"User", data.text||"[No content]", data.timestamp||"");
+          appendMessage(data.sender||"User", data.text||"[No content]");
         }
-      }catch(e){ console.error("SSE error",e); }
+      }catch(e){}
     };
 
-    // ================== Lead List ==================
+    // ================== Leads ==================
     function loadLeads(){
       fetch("/api/contacts/").then(res=>res.json()).then(data=>{
         const leadList=document.getElementById("leadList");
         leadList.innerHTML="";
         if(!data.contacts?.length){ 
-          leadList.innerHTML="<p>No leads found.</p>"; 
+          leadList.innerHTML="<div class='loading'>No leads found.</div>"; 
           return; 
         }
         data.contacts.slice().reverse().forEach(c=>{
@@ -278,7 +294,6 @@
       });
     }
 
-    // Load data on start
     loadDashboardData();
     loadLeads();
     loadLocation();
