@@ -1,19 +1,21 @@
 Django==5.2.6
-django_ipware==7.0.1
 djangorestframework==3.16.1
+django-ipware==7.0.1
+django-cors-headers==4.7.0
+django-crispy-forms==2.4
 geoip2==5.1.0
-django-cors-headers
-channels
-django-crispy-forms
-redis
-mysqlclient==2.2.7
-gunicorn
-dj-database-url
-psycopg2-binary
-whitenoise
-uvicorn[standard]
 
+# Deployment
+gunicorn==23.0.0
+whitenoise==6.9.0
+dj-database-url==3.0.1
+psycopg2-binary==2.9.10
 
+# For WebSockets / Real-time
+channels==4.1.0
+channels-redis==4.2.0
+daphne==4.1.0
+redis==6.4.0
 
-
-
+# Optional: ASGI server
+uvicorn[standard]==0.35.0
