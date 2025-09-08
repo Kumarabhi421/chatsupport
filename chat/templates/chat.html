@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -60,7 +59,6 @@
     const sendBtn = document.getElementById('sendBtn');
     const tokenBox = document.getElementById('tokenBox');
 
-    // ❌ localStorage removed
     let contactId = null;
     const displayedMsgIds = new Set();
     let _userStreamStarted = false;
@@ -68,10 +66,8 @@
     let initialGreetingAdded = false;
 
     function addMsg(text, who, id=null){
-      // 🚫 Agar text me email ya phone hai to user ko show na ho
       const regex = /(\b\d{10,}\b|[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,})/ig;
       if(regex.test(text)) return;
-
       if(id && displayedMsgIds.has(id)) return;
       if(id) displayedMsgIds.add(id);
 
@@ -83,7 +79,7 @@
     }
 
     async function hit(message){
-      const r = await fetch('/api/get-response/', {
+      const r = await fetch('/chat/get_response/', {
         method:'POST',
         headers:{'Content-Type':'application/json'},
         body:JSON.stringify({message, contact_id: contactId})
@@ -117,7 +113,7 @@
     function startUserStream(cid){
       if(_userEvtSource) _userEvtSource.close();
       try {
-        _userEvtSource = new EventSource(`/api/user-stream/${cid}/`);
+        _userEvtSource = new EventSource(`/chat/user_stream/${cid}/`);
         _userEvtSource.onmessage = function(event){
           try{
             const data = JSON.parse(event.data || "{}");
@@ -142,8 +138,7 @@
       }
     }
 
-    // 🚀 Contact create/load without localStorage
-    fetch("/api/save-contact/", {
+    fetch("/chat/save_contact/", {
       method:"POST",
       headers:{"Content-Type":"application/json"},
       body:JSON.stringify({})
@@ -157,9 +152,6 @@
         _userStreamStarted = true;
       }
     });
-
-
-    
   </script>
 </body>
-</html> 
+</html>
