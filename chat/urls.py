@@ -36,23 +36,21 @@ from django.urls import path
 from . import views
 
 urlpatterns = [
-    # Main chat page
+    # ==== Main Chat Page ====
     path("", views.chat_view, name="chat_page"),
 
-    # Admin panel UI
-    path("admin-panel/", views.admin_panel_view, name="admin_panel"),
-
     # ==== Chatbot APIs ====
-    path("api/get_response/", views.get_response, name="get_response"),
-    path("api/save_contact/", views.save_contact, name="save_contact"),
+    path("api/get-response/", views.get_response, name="get_response"),
+    path("api/save-contact/", views.save_contact, name="save_contact"),
 
     # ==== Streaming (SSE) ====
-    path("api/user_stream/<int:contact_id>/", views.user_stream, name="user_stream"),
-    path("api/lead_stream/", views.lead_stream, name="lead_stream"),
+    path("api/user-stream/<int:contact_id>/", views.user_stream, name="user_stream"),
+    path("api/lead-stream/", views.lead_stream, name="lead_stream"),
 
-    # ==== Admin Actions ====
-    path("api/admin_reply/", views.admin_reply, name="admin_reply"),
-    path("api/admin_send/", views.admin_send_message, name="admin_send_message"),
+    # ==== Admin Panel ====
+    path("admin-panel/", views.admin_panel_view, name="admin_panel"),
+    path("api/admin-reply/", views.admin_reply, name="admin_reply"),
+    path("api/admin-send/", views.admin_send_message, name="admin_send_message"),
 
     # ==== Contacts & Messages ====
     path("api/contacts/", views.get_contacts, name="get_contacts"),
