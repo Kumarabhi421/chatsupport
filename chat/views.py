@@ -1,3 +1,4 @@
+
 from django.shortcuts import render
 from django.views.decorators.csrf import csrf_exempt
 from django.core.validators import validate_email
@@ -19,7 +20,62 @@ import difflib
 
 RESPONSES = {
     # ===== GREETINGS =====
-   
+    "hello": "Hello! Welcome to Urgent IT Solution. How can we assist you today?",
+    "hi": "Hi there! Urgent IT Solution at your service—what can we do for you?",
+    "hey": "Hey! You’ve reached Urgent IT Solution—how can we help?",
+    "good morning": "Good morning! How can we help you today?",
+    "good afternoon": "Good afternoon! How can we assist you right now?",
+    "good evening": "Good evening! What IT support can we offer this evening?",
+
+    # ===== GOODBYE =====
+    "bye": "Goodbye! Have a great day.",
+    "goodbye": "Hope to talk to you soon! 😊",
+     "okey": "if any query so please tell me ! 😊",
+
+    # ===== CONTACT & SUPPORT =====
+    "call support": "Feel free to contact our support via phone or WhatsApp at +91 7408142576.",
+    "support": "We provide 24/7 technical support. Please describe your issue and we’ll be right on it.",
+    "cont": "Reach us at +91 7408142576 or urgentitsolution@gmail.com",
+    "call": "Feel free to contact our support via phone or WhatsApp...",
+    "email": "You can email us at urgentitsolution@gmail.com",
+    "location": "Our main office is in Noida, Uttar Pradesh, India. We serve clients across the country.",
+    "hours": "We are available 24/7. You can reach us anytime.",
+    "emergency": "If it’s urgent, please contact our support number immediately.",
+
+    # ===== SERVICES =====
+    "services": "We specialize in Web Design, Digital Marketing, Mobile App Development, and Custom Software Solutions.",
+    "website": "Yes, we build responsive websites, landing pages, and e-commerce platforms tailored for businesses of all sizes.",
+    "website designing": "We provide professional, mobile-friendly website designing services at affordable prices.",
+    "seo": "Yes, we provide SEO optimization services to improve your website's ranking.",
+    "digital marketing": "We offer SEO, SEM, Social Media Marketing (SMM), and PPC services.",
+    "branding": "We offer logo design, branding, and identity services for your company.",
+    "hosting": "We provide fast and secure web hosting for all our clients.",
+    "portfolio": "Check out our projects here: https://urgentitsolution.com/portfolio",
+    "software": "We develop custom software and mobile/web applications trusted for quality and affordability.",
+    "app development": "We provide mobile and web app development tailored to your business needs.",
+
+    # ===== ABOUT & COURSES =====
+    "about": "Urgent IT Solution is a trusted IT and digital marketing company based in Noida, delivering affordable, high-quality solutions across India.",
+    "courses": "We offer placement-oriented courses in Digital Marketing, Web Development, and related areas.",
+    "placement": "We provide career-oriented IT courses with placement assistance.",
+
+    # ===== QUOTES & PAYMENTS =====
+    "pricing": "Pricing depends on project complexity. Please contact us for a customized quote.",
+    "quote": "To get a quote, please provide details of your project requirements.",
+    "payment": "We accept payments via Bank Transfer, UPI, and PayPal.",
+
+    # ===== ISSUES & TECH HELP =====
+    "bug": "We can help fix bugs. Please provide the details of the issue.",
+    "issue": "Sorry to hear that. Can you explain the problem?",
+    "update": "We regularly update our software for security and new features.",
+    "maintenance": "Scheduled maintenance happens on weekends. We notify users beforehand.",
+    "login": "If you're facing login issues, try resetting your password.",
+    "signup": "Sign up using your email or mobile number.",
+    "reset password": "To reset your password, click on 'Forgot Password' at login.",
+
+    # ===== THANKS =====
+    "thank you": "You're welcome! 😊",
+    "thanks": "No problem at all—we're here to help.",
 
     # ===== PROMPTS / EXTRAS =====
     "consultation": "Would you like to schedule a free consultation to discuss your project?",
