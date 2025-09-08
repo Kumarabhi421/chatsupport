@@ -518,8 +518,6 @@
 
 
 
-
-
 from django.shortcuts import render
 from django.views.decorators.csrf import csrf_exempt
 from django.core.validators import validate_email
@@ -538,38 +536,25 @@ from .serializers import MessageSerializer
 
 # ================= KEYWORD BOT =================
 RESPONSES = {
-    # ===== GREETINGS =====
-    "hello": "Hello! How can I assist you today?",
-    "hi": "Hi there! How can I help you?",
-    "hey": "Hey! What can I do for you?",
-
-    # ===== PROMPTS / EXTRAS =====
     "consultation": "Would you like to schedule a free consultation to discuss your project?",
     "promotion": "Interested in boosting your business online? Ask us about our digital marketing plans!",
-
-    # ===== DEFAULT =====
     "default": "Sorry, I didn't understand that. Can you please rephrase your question?"
 }
-
 
 def _best_reply(user_message: str) -> str:
     if not user_message:
         return "Hello! How can I help you?"
 
     user_message = user_message.lower().strip()
-
-    # Fuzzy match (best effort)
     match = difflib.get_close_matches(user_message, RESPONSES.keys(), n=1, cutoff=0.6)
     if match:
         return RESPONSES[match[0]]
 
-    # Substring check (agar keyword sentence me ho)
     for key, reply in RESPONSES.items():
         if key in user_message:
             return reply
 
     return RESPONSES["default"]
-
 
 # ================= CONTACT INFO EXTRACTION =================
 def extract_contact_info(text: str):
@@ -590,13 +575,11 @@ def extract_contact_info(text: str):
 
     return mobile, email
 
-
 # ================== GEO LOCATION (IP → City/Country) ==================
 from django.conf import settings
 try:
     from ipware import get_client_ip
 except Exception:
-    # Minimal fallback if ipware not installed
     def get_client_ip(request):
         return request.META.get("HTTP_X_FORWARDED_FOR", request.META.get("REMOTE_ADDR")), True
 
@@ -608,10 +591,6 @@ except Exception:
     _GEOIP_READER = None
 
 def _get_geo_from_ip(ip: str):
-    """
-    Returns dict: {"ip", "country", "city", "lat", "lon"}
-    If lookup fails, returns keys with None (ip included).
-    """
     if not ip or ip == "unknown":
         return {"ip": ip, "country": None, "city": None, "lat": None, "lon": None}
 
@@ -637,7 +616,6 @@ def _get_geo_from_ip(ip: str):
     except Exception:
         return {"ip": ip, "country": None, "city": None, "lat": None, "lon": None}
 
-
 # ================= VIEWS =================
 def chat_view(request):
     return render(request, 'chat.html')
@@ -645,7 +623,6 @@ def chat_view(request):
 def admin_panel_view(request):
     contacts = ContactInfo.objects.prefetch_related("messages").all().order_by("-created_at")
     return render(request, 'chat/admin_panel.html', {"contacts": contacts})
-
 
 # ================= SSE STREAM =================
 subscribers_admin = set()
@@ -712,7 +689,6 @@ def user_stream(request, contact_id):
     resp["Cache-Control"] = "no-cache"
     return resp
 
-
 # ================= CONTACT / CHAT LOGIC =================
 SERVER_START_TIME = timezone.now()
 
@@ -740,7 +716,6 @@ def _get_or_create_contact(request, user_ip: str) -> ContactInfo:
 
     return contact
 
-
 # ================= CHAT API =================
 @csrf_exempt
 def get_response(request):
@@ -755,7 +730,6 @@ def get_response(request):
     user_message = (data.get('message') or "").strip()
     sender = (data.get('sender') or 'user').lower()
 
-    # --- IP + GEO ---
     client_ip, _ = get_client_ip(request)
     user_ip = client_ip or request.META.get("REMOTE_ADDR", "unknown")
     geo = _get_geo_from_ip(user_ip)
@@ -763,7 +737,6 @@ def get_response(request):
 
     contact = _get_or_create_contact(request, user_ip)
 
-    # save user message
     if user_message:
         msg = Message.objects.create(sender=sender, text=user_message, contact=contact)
         payload_user = {
@@ -777,10 +750,8 @@ def get_response(request):
         }
         _broadcast_admin(payload_user)
 
-    # check contact info
     if not request.session.get("contact_saved", False):
         mobile, email = extract_contact_info(user_message)
-
         if mobile or email:
             if mobile:
                 contact.mobile = mobile
@@ -804,7 +775,6 @@ def get_response(request):
     else:
         reply = _best_reply(user_message.lower()) if user_message else "Hello! How can I help you?"
 
-    # send bot reply
     bot_msg = Message.objects.create(sender="bot", text=reply, contact=contact)
     payload_bot = {
         "id": bot_msg.id,
@@ -824,7 +794,6 @@ def get_response(request):
         "token": f"TKN-{contact.id}",
         "geo": geo,
     })
-
 
 # ================= ADMIN REPLY =================
 @csrf_exempt
@@ -861,6 +830,7 @@ def admin_reply(request):
         return JsonResponse({"error": "Contact not found"}, status=404)
 
     msg = Message.objects.create(sender="admin", text=message, contact=contact)
+
     geo = None
     try:
         geo = getattr(request, "session", {}).get("user_geo")
@@ -881,12 +851,13 @@ def admin_reply(request):
 
     return JsonResponse({"status": "success", "message": "Sent", "token": f"TKN-{contact.id}"})
 
+# alias (so urls.py route works)
+admin_send_message = admin_reply
 
 # ================= MESSAGES API =================
 class MessageListCreateView(generics.ListCreateAPIView):
     queryset = Message.objects.all().order_by('-timestamp')
     serializer_class = MessageSerializer
-
 
 # ================= CONTACT API =================
 @csrf_exempt
@@ -966,12 +937,12 @@ def get_messages(request, contact_id):
     except ContactInfo.DoesNotExist:
         return JsonResponse({"error": "Contact not found"}, status=404)
 
-
 # ================= STATS API =================
 def stats(request):
     total_contacts = ContactInfo.objects.count()
     total_messages = Message.objects.count()
     total_visitors = ContactInfo.objects.values("contact_value").distinct().count()
+
     total_chats = Message.objects.values("contact_id").distinct().count()
 
     page_views_agg = ContactInfo.objects.aggregate(total=Sum('page_views'))
