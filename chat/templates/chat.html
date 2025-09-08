@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -60,7 +59,6 @@
     const sendBtn = document.getElementById('sendBtn');
     const tokenBox = document.getElementById('tokenBox');
 
-    // ❌ localStorage removed
     let contactId = null;
     const displayedMsgIds = new Set();
     let _userStreamStarted = false;
@@ -68,7 +66,6 @@
     let initialGreetingAdded = false;
 
     function addMsg(text, who, id=null){
-      // 🚫 Agar text me email ya phone hai to user ko show na ho
       const regex = /(\b\d{10,}\b|[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,})/ig;
       if(regex.test(text)) return;
 
@@ -142,7 +139,6 @@
       }
     }
 
-    // 🚀 Contact create/load without localStorage
     fetch("/api/save-contact/", {
       method:"POST",
       headers:{"Content-Type":"application/json"},
@@ -157,9 +153,6 @@
         _userStreamStarted = true;
       }
     });
-
-
-    
   </script>
 </body>
-</html> 
+</html>
