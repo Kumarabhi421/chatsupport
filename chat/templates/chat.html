@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -82,7 +83,7 @@
     }
 
     async function hit(message){
-      const r = await fetch('/chat/get_response/', {   // ✅ FIXED
+      const r = await fetch('/api/get-response/', {
         method:'POST',
         headers:{'Content-Type':'application/json'},
         body:JSON.stringify({message, contact_id: contactId})
@@ -116,7 +117,7 @@
     function startUserStream(cid){
       if(_userEvtSource) _userEvtSource.close();
       try {
-        _userEvtSource = new EventSource(`/chat/user_stream/${cid}/`);   // ✅ FIXED
+        _userEvtSource = new EventSource(`/api/user-stream/${cid}/`);
         _userEvtSource.onmessage = function(event){
           try{
             const data = JSON.parse(event.data || "{}");
@@ -142,7 +143,7 @@
     }
 
     // 🚀 Contact create/load without localStorage
-    fetch("/chat/save_contact/", {   // ✅ FIXED
+    fetch("/api/save-contact/", {
       method:"POST",
       headers:{"Content-Type":"application/json"},
       body:JSON.stringify({})
@@ -156,6 +157,9 @@
         _userStreamStarted = true;
       }
     });
+
+
+    
   </script>
 </body>
-</html>
+</html> 
