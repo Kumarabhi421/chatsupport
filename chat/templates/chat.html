@@ -68,7 +68,6 @@
     function addMsg(text, who, id=null){
       const regex = /(\b\d{10,}\b|[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,})/ig;
       if(regex.test(text)) return;
-
       if(id && displayedMsgIds.has(id)) return;
       if(id) displayedMsgIds.add(id);
 
@@ -139,6 +138,7 @@
       }
     }
 
+    // 🚀 Contact create/load without localStorage
     fetch("/api/save-contact/", {
       method:"POST",
       headers:{"Content-Type":"application/json"},
@@ -153,6 +153,23 @@
         _userStreamStarted = true;
       }
     });
+
+    // ✅ Polling fallback every 3 sec
+    setInterval(() => {
+      if(contactId){
+        fetch(`/get-messages/${contactId}/`)
+          .then(res => res.json())
+          .then(data => {
+            (data.messages || []).forEach(msg => {
+              const who = (msg.sender || "").toLowerCase() === "admin" ? "admin" :
+                          ((msg.sender || "").toLowerCase() === "user" ? "user" : "bot");
+              addMsg(msg.text, who, msg.id);
+            });
+          })
+          .catch(err => console.error("Polling error:", err));
+      }
+    }, 3000);
+
   </script>
 </body>
 </html>
