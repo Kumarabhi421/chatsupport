@@ -13,7 +13,7 @@
     }
     .chat-container{
       width:350px; height:520px;
-      background:rgba(255,255,255,.9);
+      background:rgba(255,255,255,.95);
       border-radius:16px; overflow:hidden;
       box-shadow:0 10px 30px rgba(0,0,0,.25);
       display:flex; flex-direction:column;
@@ -44,9 +44,7 @@
       💬 Website Chat Support
       <div class="token-info" id="tokenBox"></div>
     </div>
-    <div id="box" class="chat-messages">
-      <!-- Messages will load here -->
-    </div>
+    <div id="box" class="chat-messages"></div>
     <div class="chat-input">
       <input id="inp" type="text" placeholder="Type your message..." />
       <button id="sendBtn">Send</button>
@@ -61,13 +59,12 @@
 
     let contactId = null;
     const displayedMsgIds = new Set();
-    let _userStreamStarted = false;
-    let _userEvtSource = null;
     let initialGreetingAdded = false;
 
+    // Add message to chat
     function addMsg(text, who, id=null){
       const regex = /(\b\d{10,}\b|[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,})/ig;
-      if(regex.test(text)) return;
+      if(regex.test(text)) return; // Phone/email block
       if(id && displayedMsgIds.has(id)) return;
       if(id) displayedMsgIds.add(id);
 
@@ -78,6 +75,7 @@
       box.scrollTop = box.scrollHeight;
     }
 
+    // Send message to backend
     async function hit(message){
       const r = await fetch('/api/get-response/', {
         method:'POST',
@@ -87,6 +85,7 @@
       return r.json();
     }
 
+    // On Send
     async function send(){
       const text = inp.value.trim();
       if(!text) return;
@@ -97,9 +96,9 @@
         if(data && data.contact_id){
           contactId = data.contact_id;
           tokenBox.textContent = "🆔 Your Token: " + contactId;
-          if(!_userStreamStarted){
-            startUserStream(contactId);
-            _userStreamStarted = true;
+          if(!initialGreetingAdded){
+            addMsg("🙏 Namaste! How can I help you today?", 'bot');
+            initialGreetingAdded = true;
           }
         }
       }catch(e){
@@ -110,35 +109,7 @@
     sendBtn.onclick = send;
     inp.addEventListener('keydown', (e)=>{ if(e.key==='Enter') send(); });
 
-    function startUserStream(cid){
-      if(_userEvtSource) _userEvtSource.close();
-      try {
-        _userEvtSource = new EventSource(`/api/user-stream/${cid}/`);
-        _userEvtSource.onmessage = function(event){
-          try{
-            const data = JSON.parse(event.data || "{}");
-            if(Number(data.contact_id) === Number(cid)){
-              const who = (data.sender || "").toLowerCase() === "admin" ? "admin" :
-                          ((data.sender || "").toLowerCase() === "user" ? "user" : "bot");
-              addMsg(data.text || "", who, data.id);
-            }
-          } catch(e){ console.error("SSE parse error", e); }
-        };
-        _userEvtSource.onerror = function(err){
-          console.warn("SSE connection error", err);
-        };
-
-        if(!initialGreetingAdded){
-          addMsg("🙏 Namaste! How can I help you today?", 'bot');
-          initialGreetingAdded = true;
-        }
-
-      } catch(e){
-        console.error("SSE start failed", e);
-      }
-    }
-
-    // 🚀 Contact create/load without localStorage
+    // Create/Load Contact on start
     fetch("/api/save-contact/", {
       method:"POST",
       headers:{"Content-Type":"application/json"},
@@ -149,23 +120,28 @@
       if(data && data.id){
         contactId = data.id;
         tokenBox.textContent = "🆔 Your Token: " + contactId;
-        startUserStream(contactId);
-        _userStreamStarted = true;
+        if(!initialGreetingAdded){
+          addMsg("🙏 Namaste! How can I help you today?", 'bot');
+          initialGreetingAdded = true;
+        }
       }
     });
-// set timing 
-   setInterval(() => {
-  if(contactId){
-    fetch(`/api/messages/${contactId}/`)
-      .then(res => res.json())
-      .then(data => {
-        (data.messages || []).forEach(msg => {
-          addMsg(msg.text, msg.sender, msg.id);
-        });
-      });
-  }
-}, 3000);
 
+    // Poll messages every 3 sec
+    setInterval(() => {
+      if(contactId){
+        fetch(`/api/messages/${contactId}/`)
+          .then(res => res.json())
+          .then(data => {
+            (data.messages || []).forEach(msg => {
+              const who = (msg.sender || "").toLowerCase() === "admin" ? "admin" :
+                          ((msg.sender || "").toLowerCase() === "user" ? "user" : "bot");
+              addMsg(msg.text, who, msg.id);
+            });
+          })
+          .catch(err => console.error("Polling error:", err));
+      }
+    }, 3000);
   </script>
 </body>
 </html>
