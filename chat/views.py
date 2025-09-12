@@ -140,36 +140,31 @@ except Exception:
     _GEOIP_READER = None
 
 def _get_geo_from_ip(ip: str):
-    """
-    Returns dict: {"ip", "country", "city", "lat", "lon"}
-    If lookup fails, returns keys with None (ip included).
-    """
-    if not ip or ip == "unknown":
-        return {"ip": ip, "country": None, "city": None, "lat": None, "lon": None}
+    if not ip:
+        return {"ip": ip, "country": "Unknown", "city": "Unknown", "lat": None, "lon": None}
 
-    # If geoip2 not available or DB path missing, fail soft
-    if geoip2 is None:
-        return {"ip": ip, "country": None, "city": None, "lat": None, "lon": None}
+    if _is_private_ip(ip):
+        # Local testing ke liye fake location set karo
+        return {"ip": ip, "country": "India", "city": "Mumbai", "lat": 19.0760, "lon": 72.8777}
 
-    global _GEOIP_READER
+    # --- real lookup ---
     try:
-        if _GEOIP_READER is None:
-            db_path = getattr(settings, "GEOIP_DB_PATH", None)
-            if not db_path:
-                # try a common fallback path; still safe if not present
-                db_path = "/usr/local/share/GeoIP/GeoLite2-City.mmdb"
-            _GEOIP_READER = geoip2.database.Reader(str(db_path))
+        url = f"http://ip-api.com/json/{ip}?fields=status,country,city,lat,lon,message"
+        resp = requests.get(url, timeout=3)
+        data = resp.json() if resp.status_code == 200 else {}
+        if data.get("status") == "success":
+            return {
+                "ip": ip,
+                "country": data.get("country") or "Unknown",
+                "city": data.get("city") or "Unknown",
+                "lat": data.get("lat"),
+                "lon": data.get("lon"),
+            }
+    except:
+        pass
 
-        resp = _GEOIP_READER.city(ip)
-        return {
-            "ip": ip,
-            "country": resp.country.name,
-            "city": resp.city.name,
-            "lat": resp.location.latitude,
-            "lon": resp.location.longitude,
-        }
-    except Exception:
-        return {"ip": ip, "country": None, "city": None, "lat": None, "lon": None}
+    return {"ip": ip, "country": "Unknown", "city": "Unknown", "lat": None, "lon": None}
+
 
 # ================= VIEWS =================
 def chat_view(request):
