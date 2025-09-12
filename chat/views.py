@@ -8,81 +8,17 @@ from django.http import JsonResponse, StreamingHttpResponse
 from rest_framework import generics
 from django.db.models import Count, Sum
 from django.db.models.functions import ExtractMonth, ExtractYear
-
 import json, difflib, re
 from queue import Queue
-
 from .models import Message, ContactInfo
 from .serializers import MessageSerializer
-
 # ================= KEYWORD BOT =================
 import difflib
 
 RESPONSES = {
-    # ===== GREETINGS =====
     "hello": "Hello! Welcome to Urgent IT Solution. How can we assist you today?",
     "hi": "Hi there! Urgent IT Solution at your service—what can we do for you?",
-    "hey": "Hey! You’ve reached Urgent IT Solution—how can we help?",
-    "good morning": "Good morning! How can we help you today?",
-    "good afternoon": "Good afternoon! How can we assist you right now?",
-    "good evening": "Good evening! What IT support can we offer this evening?",
-
-    # ===== GOODBYE =====
-    "bye": "Goodbye! Have a great day.",
-    "goodbye": "Hope to talk to you soon! 😊",
-     "okey": "if any query so please tell me ! 😊",
-
-    # ===== CONTACT & SUPPORT =====
-    "call support": "Feel free to contact our support via phone or WhatsApp at +91 7408142576.",
-    "support": "We provide 24/7 technical support. Please describe your issue and we’ll be right on it.",
-    "cont": "Reach us at +91 7408142576 or urgentitsolution@gmail.com",
-    "call": "Feel free to contact our support via phone or WhatsApp...",
-    "email": "You can email us at urgentitsolution@gmail.com",
-    "location": "Our main office is in Noida, Uttar Pradesh, India. We serve clients across the country.",
-    "hours": "We are available 24/7. You can reach us anytime.",
-    "emergency": "If it’s urgent, please contact our support number immediately.",
-
-    # ===== SERVICES =====
-    "services": "We specialize in Web Design, Digital Marketing, Mobile App Development, and Custom Software Solutions.",
-    "website": "Yes, we build responsive websites, landing pages, and e-commerce platforms tailored for businesses of all sizes.",
-    "website designing": "We provide professional, mobile-friendly website designing services at affordable prices.",
-    "seo": "Yes, we provide SEO optimization services to improve your website's ranking.",
-    "digital marketing": "We offer SEO, SEM, Social Media Marketing (SMM), and PPC services.",
-    "branding": "We offer logo design, branding, and identity services for your company.",
-    "hosting": "We provide fast and secure web hosting for all our clients.",
-    "portfolio": "Check out our projects here: https://urgentitsolution.com/portfolio",
-    "software": "We develop custom software and mobile/web applications trusted for quality and affordability.",
-    "app development": "We provide mobile and web app development tailored to your business needs.",
-
-    # ===== ABOUT & COURSES =====
-    "about": "Urgent IT Solution is a trusted IT and digital marketing company based in Noida, delivering affordable, high-quality solutions across India.",
-    "courses": "We offer placement-oriented courses in Digital Marketing, Web Development, and related areas.",
-    "placement": "We provide career-oriented IT courses with placement assistance.",
-
-    # ===== QUOTES & PAYMENTS =====
-    "pricing": "Pricing depends on project complexity. Please contact us for a customized quote.",
-    "quote": "To get a quote, please provide details of your project requirements.",
-    "payment": "We accept payments via Bank Transfer, UPI, and PayPal.",
-
-    # ===== ISSUES & TECH HELP =====
-    "bug": "We can help fix bugs. Please provide the details of the issue.",
-    "issue": "Sorry to hear that. Can you explain the problem?",
-    "update": "We regularly update our software for security and new features.",
-    "maintenance": "Scheduled maintenance happens on weekends. We notify users beforehand.",
-    "login": "If you're facing login issues, try resetting your password.",
-    "signup": "Sign up using your email or mobile number.",
-    "reset password": "To reset your password, click on 'Forgot Password' at login.",
-
-    # ===== THANKS =====
-    "thank you": "You're welcome! 😊",
-    "thanks": "No problem at all—we're here to help.",
-
-    # ===== PROMPTS / EXTRAS =====
-    "consultation": "Would you like to schedule a free consultation to discuss your project?",
-    "promotion": "Interested in boosting your business online? Ask us about our digital marketing plans!",
-    "default": "Sorry, I didn't understand that. Can you please rephrase your question?"
 }
-
 
 def _best_reply(user_message: str) -> str:
     if not user_message:
@@ -92,7 +28,7 @@ def _best_reply(user_message: str) -> str:
 
     # Fuzzy match (best effort)
     match = difflib.get_close_matches(user_message, RESPONSES.keys(), n=1, cutoff=0.6)
-    if match:
+    if match:   
         return RESPONSES[match[0]]
 
     # Substring check (agar keyword sentence me ho)
@@ -101,7 +37,6 @@ def _best_reply(user_message: str) -> str:
             return reply
 
     return RESPONSES["default"]
-
 
 # ================= CONTACT INFO EXTRACTION =================
 def extract_contact_info(text: str):
@@ -127,43 +62,52 @@ def extract_contact_info(text: str):
 from django.conf import settings
 try:
     from ipware import get_client_ip
-except Exception:
-    # Minimal fallback if ipware not installed (still works, less accurate)
+except ImportError:
+    # Minimal fallback if ipware not installed
     def get_client_ip(request):
         return request.META.get("HTTP_X_FORWARDED_FOR", request.META.get("REMOTE_ADDR")), True
 
 try:
     import geoip2.database
     _GEOIP_READER = None
-except Exception:
+except ImportError:
     geoip2 = None
     _GEOIP_READER = None
 
+
 def _get_geo_from_ip(ip: str):
-    if not ip:
-        return {"ip": ip, "country": "Unknown", "city": "Unknown", "lat": None, "lon": None}
-
-    if _is_private_ip(ip):
-        # Local testing ke liye fake location set karo
-        return {"ip": ip, "country": "India", "city": "Mumbai", "lat": 19.0760, "lon": 72.8777}
-
-    # --- real lookup ---
+    """
+    Returns dict: {"ip", "country", "city", "lat", "lon"}
+    Always returns a dict, never crashes.
+    """
     try:
-        url = f"http://ip-api.com/json/{ip}?fields=status,country,city,lat,lon,message"
-        resp = requests.get(url, timeout=3)
-        data = resp.json() if resp.status_code == 200 else {}
-        if data.get("status") == "success":
-            return {
-                "ip": ip,
-                "country": data.get("country") or "Unknown",
-                "city": data.get("city") or "Unknown",
-                "lat": data.get("lat"),
-                "lon": data.get("lon"),
-            }
-    except:
-        pass
+        if not ip or ip == "unknown":
+            return {"ip": ip, "country": "Unknown", "city": "Unknown", "lat": None, "lon": None}
 
-    return {"ip": ip, "country": "Unknown", "city": "Unknown", "lat": None, "lon": None}
+        # Ignore local/private IPs (LAN / localhost)
+        if ip.startswith(("127.", "192.", "10.")):
+            return {"ip": ip, "country": "Local Network", "city": "Localhost", "lat": None, "lon": None}
+
+        if geoip2 is None:
+            # geoip2 not installed
+            return {"ip": ip, "country": "Unknown", "city": "Unknown", "lat": None, "lon": None}
+
+        global _GEOIP_READER
+        if _GEOIP_READER is None:
+            db_path = getattr(settings, "GEOIP_DB_PATH", None) or "/usr/local/share/GeoIP/GeoLite2-City.mmdb"
+            _GEOIP_READER = geoip2.database.Reader(str(db_path))
+
+        resp = _GEOIP_READER.city(ip)
+        return {
+            "ip": ip,
+            "country": resp.country.name or "Unknown",
+            "city": resp.city.name or "Unknown",
+            "lat": resp.location.latitude,
+            "lon": resp.location.longitude,
+        }
+    except Exception:
+        # If anything fails, fallback to safe dummy data
+        return {"ip": ip, "country": "Unknown", "city": "Unknown", "lat": None, "lon": None}
 
 
 # ================= VIEWS =================
@@ -562,3 +506,38 @@ def stats(request):
         "chats_data": chats_data,
         "page_views_dist": page_views_dist,
     })
+
+
+
+# ================= LOGIN SYSTEM (ADDED) =================
+from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth.decorators import login_required
+from django.shortcuts import redirect
+from django.contrib import messages
+
+def login_view(request):
+    """
+    Login page for custom admin panel
+    """
+    if request.method == "POST":
+        username = request.POST.get("username")
+        password = request.POST.get("password")
+        user = authenticate(request, username=username, password=password)
+        if user:
+            login(request, user)
+            return redirect("/admin-panel/")
+        else:
+            messages.error(request, "Invalid username or password")
+    return render(request, "chat/login.html")
+
+def logout_view(request):
+    logout(request)
+    return redirect("/login/")
+
+@login_required(login_url="/login/")
+def admin_panel_view(request):
+    """
+    Protect your custom admin panel with Django login.
+    """
+    contacts = ContactInfo.objects.prefetch_related("messages").all().order_by("-created_at")
+    return render(request, "chat/admin_panel.html", {"contacts": contacts})
