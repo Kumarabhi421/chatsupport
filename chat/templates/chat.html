@@ -150,16 +150,14 @@
 
 
 
-<button id="scrapixBtn" onclick="togglePanel()">💬</button>
-<div id="scrapixPanel" style="display:none;">
+<button id="scrapixBtn" onclick="(p=document.getElementById('scrapixPanel')).style.display=(p.style.display==='block'?'none':'block');this.innerHTML=this.innerHTML==='💬'?'✖':'💬';" 
+  style="position:fixed;right:20px;bottom:20px;width:60px;height:60px;border:none;border-radius:50%;background:linear-gradient(135deg,#6a11cb,#2575fc);color:#fff;font-size:24px;cursor:pointer;box-shadow:0 5px 15px rgba(0,0,0,0.3);transition:0.2s;">💬</button>
+
+<div id="scrapixPanel" style="display:none;position:fixed;bottom:90px;right:20px;width:350px;height:500px;border-radius:10px;overflow:hidden;box-shadow:0 5px 20px rgba(0,0,0,0.3);">
   <iframe src="https://chatsupport-ruq6.onrender.com/" style="width:100%;height:100%;border:none;"></iframe>
 </div>
-<script>
-function togglePanel(){
-  const p = document.getElementById("scrapixPanel");
-  const b = document.getElementById("scrapixBtn");
-  const open = (p.style.display==="none" || p.style.display==="");
-  p.style.display = open ? "block" : "none";
-  b.innerHTML = open ? "✖" : "💬";
-}
-</script>
+
+<style>
+  #scrapixBtn:hover{transform:scale(1.2);box-shadow:0 8px 20px rgba(0,0,0,0.4);}
+  #scrapixBtn:active{transform:scale(0.95);}
+</style>
