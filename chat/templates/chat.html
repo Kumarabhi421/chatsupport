@@ -145,3 +145,23 @@
   </script>
 </body>
 </html>
+
+
+
+
+
+<button id="scrapixBtn" style="position:fixed;right:20px;bottom:20px;z-index:1000;" onclick="togglePanel()">Open Scrapix</button>
+
+<div id="scrapixPanel" style="display:none;position:fixed;right:0;bottom:70px;width:350px;height:500px;z-index:999;background:#fff;box-shadow:-3px 0 10px rgba(0,0,0,0.2);">
+  <iframe src="https://indiascrapix.co.in/" style="width:100%;height:100%;border:none;"></iframe>
+</div>
+
+<script>
+function togglePanel(){
+  let p=document.getElementById("scrapixPanel"),
+      b=document.getElementById("scrapixBtn");
+  if(p.style.display==="none"){p.style.display="block";b.innerText="Close Scrapix";}
+  else{p.style.display="none";b.innerText="Open Scrapix";}
+}
+</script>
+
