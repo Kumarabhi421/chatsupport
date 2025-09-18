@@ -59,6 +59,11 @@
 # ]
 
 # ROOT_URLCONF = 'support_chat.urls'
+# ================================
+# X-Frame Options (Iframe allow)
+# ================================
+X_FRAME_OPTIONS = 'ALLOWALL'
+
 
 # TEMPLATES = [
 #     {
