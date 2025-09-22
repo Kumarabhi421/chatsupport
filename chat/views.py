@@ -16,9 +16,158 @@ from .serializers import MessageSerializer
 import difflib
 
 RESPONSES = {
+  
+    # Greetings
     "hello": "Hello! Welcome to Urgent IT Solution. How can we assist you today?",
     "hi": "Hi there! Urgent IT Solution at your service—what can we do for you?",
+    "hey": "Hey! Great to see you at Urgent IT Solution. How can we help?",
+    "good morning": "Good morning! How can Urgent IT Solution assist you today?",
+    "good afternoon": "Good afternoon! How may we help you with your digital solutions?",
+    "good evening": "Good evening! Need help with your website or online presence?",
+    
+    # Company Info
+    "company deatail": "We are Urgent IT Solution, providing Website Design, SEO, Digital Marketing, and E-commerce Solutions.",
+    "about": "Urgent IT Solution helps businesses grow online with websites, SEO, marketing, and more.",
+    "what do you do": "We provide Website Development, SEO, Social Media Marketing, and E-commerce Solutions for your business.",
+    "services": "We offer Website Design, SEO, Social Media Marketing, E-commerce Solutions, and more. How can we help you today?",
+    
+    # Contact Info
+    "contact": "You can reach us at contact@urgentitsolution.com or visit our website at https://urgentitsolution.com/",
+    "email": "Our official email is contact@urgentitsolution.com. Feel free to write to us.",
+    "phone": "You can call us at +91-XXXXXXXXXX for any queries.",
+    "address": "We are located in Noida, Uttar Pradesh, India.",
+    "location": "Our office is in Noida, Uttar Pradesh. Visit us anytime during business hours.",
+    
+    # Website & Technical
+    "website": "You can explore our services at https://urgentitsolution.com/",
+    "website design": "We create custom, responsive, and SEO-friendly websites for businesses.",
+    "seo": "Our SEO strategies improve your website ranking on Google.",
+    "social media marketing": "We help your brand grow on platforms like Instagram, Facebook, and LinkedIn.",
+    "ecommerce": "We provide complete E-commerce solutions, including store setup and management.",
+    "web development": "We develop fast, secure, and mobile-friendly websites tailored to your business.",
+    "app development": "We build user-friendly mobile apps for iOS and Android platforms.",
+    
+    # Pricing & Quotes
+    "pricing": "Our pricing depends on the service you choose. Please contact us for a quote.",
+    "quote": "We can provide a customized quote based on your project requirements.",
+    "cost": "The cost varies depending on your project. Contact us for detailed pricing.",
+    
+    # Support & Help
+    "support": "Our support team is here to help. What issue are you facing?",
+    "help": "How can we assist you today? We provide help with websites, SEO, and more.",
+    "technical issue": "Please describe the technical issue, and our team will resolve it ASAP.",
+    "troubleshoot": "We can help troubleshoot your website or digital solution problem.",
+    
+    # Business & Collaboration
+    "partnership": "We welcome partnerships. Please contact us with your proposal.",
+    "collaboration": "We are open to collaborations in IT solutions and marketing.",
+    "business": "We help businesses establish and grow their online presence.",
+    "startup": "We provide affordable digital solutions for startups to grow online.",
+    
+    # Social Media
+    "instagram": "Follow us on Instagram: https://www.instagram.com/urgentitsolution1/",
+    "linkedin": "Connect with us on LinkedIn: https://in.linkedin.com/company/urgentitsolution",
+    "facebook": "Follow our Facebook page for updates on services and promotions.",
+    "twitter": "Follow us on Twitter for latest news and tips.",
+    
+    # Working Hours
+    "hours": "We are available Monday to Saturday, 9 AM to 6 PM.",
+    "open": "Our office is open from 9 AM to 6 PM, Monday to Saturday.",
+    "closing": "We close at 6 PM, but you can reach us anytime via email.",
+    
+    # Miscellaneous
+    "thank you": "You're welcome! Happy to assist you.",
+    "thanks": "Thanks for reaching out! How else can we help?",
+    "bye": "Goodbye! Have a great day.",
+    "see you": "See you soon! Contact us anytime.",
+    "ok": "Alright! Let us know if you need any further assistance.",
+    "sure": "Sure! How can we assist you further?",
+    "yes": "Great! Please tell us more about your requirement.",
+    "no": "No problem! Let us know if you change your mind.",
+    
+    # FAQ style
+    "how to contact": "You can contact us via email, phone, or our website contact form.",
+    "how to get a quote": "Provide your project details via email or form, and we'll send a customized quote.",
+    "how to start": "Reach out to us with your requirements, and our team will guide you step by step.",
+    "do you provide maintenance": "Yes, we offer website maintenance and SEO services after launch.",
+    "can you build ecommerce": "Absolutely! We provide end-to-end E-commerce solutions.",
+    "do you offer hosting": "Yes, we provide hosting and domain registration along with website services.",
+    
+    # Engagement
+    "latest projects": "You can check our latest projects on our website portfolio section.",
+    "testimonials": "Visit our testimonials page to see what our clients say about us.",
+    "portfolio": "We have a portfolio of websites, SEO projects, and marketing campaigns. Check online.",
+    
+    # User Guidance
+    "how to order": "Contact us with your project details, and we'll guide you on placing an order.",
+    "how long takes": "Project duration depends on complexity. Usually 1-4 weeks for websites.",
+    "payment methods": "We accept online bank transfer, UPI, and other digital payments.",
+    
+    # Greetings variations
+    "hola": "Hola! Welcome to Urgent IT Solution.",
+    "greetings": "Greetings! How may we help your business grow online?",
+    
+    # Extra polite responses
+    "please": "Sure! Please provide more details so we can assist you better.",
+    "kindly": "Kindly share your requirement, and our team will get back to you.",
+    
+    # More service-related queries
+    "digital marketing": "We offer full digital marketing services including SEO, SMO, and PPC campaigns.",
+    "ppc": "Our PPC campaigns target the right audience to generate leads and sales.",
+    "content marketing": "We create high-quality content to engage your audience and improve SEO.",
+    "branding": "We help your business build a strong and recognizable brand online.",
+    
+    # Security & Reliability
+    "secure website": "We ensure websites are secure, fast, and mobile-friendly.",
+    "reliable service": "Our services are reliable and tailored to achieve your business goals.",
+    
+    # Queries about updates
+    "update": "We keep your website updated and optimized for best performance.",
+    "upgrade": "We provide upgrades and new feature integrations as per your need.",
+    
+    # Problem-solving
+    "issue": "Please describe your issue, and we will solve it quickly.",
+    "problem": "Our team can resolve your problem efficiently. Share the details.",
+    
+    # Closing interactions
+    "talk later": "Sure! Contact us anytime. We're always here to assist you.",
+    "good night": "Good night! We hope you have a restful sleep.",
+    
+    # Fun/engaging responses
+    "how are you": "We are doing great! Excited to help your business grow online.",
+    "what's up": "Our team is working hard to provide the best digital solutions!",
+    
+    # More engagement
+    "services list": "We offer Website Design, SEO, Social Media Marketing, App Development, and E-commerce Solutions.",
+    "need help": "Absolutely! Please tell us what kind of help you need.",
+    
+    # Polite follow-ups
+    "can you help": "Yes! Our team is ready to help. Please share your requirements.",
+    "need consultation": "We offer free consultation. Contact us with your project details.",
+    
+    # Promotional
+    "offers": "Check our website for current offers and promotions on digital services.",
+    "discount": "We provide occasional discounts. Reach out to know more.",
+    
+    # Misc short phrases
+    "ok thanks": "You're welcome! Feel free to ask more questions.",
+    "welcome": "Welcome! How may we assist you today?",
+    "good": "Great! Tell us how we can help further.",
+    
+    # Project Queries
+    "custom website": "We can build a custom website tailored to your business needs.",
+    "responsive website": "All our websites are fully responsive and mobile-friendly.",
+    "fast website": "We optimize websites for speed and performance.",
+    
+    # Marketing
+    "email marketing": "We create effective email campaigns to engage your audience.",
+    "social campaigns": "Our social media campaigns increase brand awareness and leads.",
+    
+    # Closing general
+    "bye bye": "Goodbye! Contact us anytime for your digital needs.",
+    "see you soon": "See you soon! We're always here to assist you.",
 }
+
 
 def _best_reply(user_message: str) -> str:
     if not user_message:
