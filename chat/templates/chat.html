@@ -17,16 +17,30 @@
       border-radius:16px; overflow:hidden;
       box-shadow:0 10px 30px rgba(0,0,0,.25);
       display:flex; flex-direction:column;
+      position:relative;
     }
     .chat-header{
       background:linear-gradient(135deg,#5f17e6,#8e2de2);
       color:#fff; padding:14px; font-weight:700; text-align:center;
       display:flex; flex-direction:column; gap:4px; align-items:center; justify-content:center;
+      position:relative;
+      z-index:1;
     }
-    .token-info{ font-size:12px; font-weight:400; color:#ffe; }
+    .token-info{
+      font-size:12px; font-weight:400; color:#ffe;
+      position:fixed;
+      top:5px;
+      right:50%;
+      transform:translateX(50%);
+      background:rgba(0,0,0,0.5);
+      padding:4px 8px;
+      border-radius:8px;
+      z-index:9999;
+    }
     .chat-messages{
       flex:1; overflow-y:auto; padding:12px; display:flex; flex-direction:column; gap:10px;
       background:#f6f6fb;
+      margin-top:0px;
     }
     .msg{max-width:80%; padding:10px 12px; border-radius:12px; word-wrap:break-word; font-size:14px;}
     .bot{align-self:flex-start; background:#f1f1f1;}
@@ -42,8 +56,8 @@
   <div class="chat-container">
     <div class="chat-header">
       💬 Website Chat Support
-      <div class="token-info" id="tokenBox"></div>
     </div>
+    <div class="token-info" id="tokenBox"></div>
     <div id="box" class="chat-messages"></div>
     <div class="chat-input">
       <input id="inp" type="text" placeholder="Type your message..." />
@@ -61,10 +75,9 @@
     const displayedMsgIds = new Set();
     let initialGreetingAdded = false;
 
-    // Add message to chat
     function addMsg(text, who, id=null){
       const regex = /(\b\d{10,}\b|[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,})/ig;
-      if(regex.test(text)) return; // Phone/email block
+      if(regex.test(text)) return;
       if(id && displayedMsgIds.has(id)) return;
       if(id) displayedMsgIds.add(id);
 
@@ -75,7 +88,6 @@
       box.scrollTop = box.scrollHeight;
     }
 
-    // Send message to backend
     async function hit(message){
       const r = await fetch('/api/get-response/', {
         method:'POST',
@@ -85,7 +97,6 @@
       return r.json();
     }
 
-    // On Send
     async function send(){
       const text = inp.value.trim();
       if(!text) return;
@@ -109,7 +120,6 @@
     sendBtn.onclick = send;
     inp.addEventListener('keydown', (e)=>{ if(e.key==='Enter') send(); });
 
-    // Create/Load Contact on start
     fetch("/api/save-contact/", {
       method:"POST",
       headers:{"Content-Type":"application/json"},
@@ -127,7 +137,6 @@
       }
     });
 
-    // Poll messages every 3 sec
     setInterval(() => {
       if(contactId){
         fetch(`/api/messages/${contactId}/`)
@@ -145,5 +154,3 @@
   </script>
 </body>
 </html>
-
-
