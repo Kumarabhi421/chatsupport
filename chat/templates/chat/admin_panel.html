@@ -166,140 +166,140 @@
   </div>
 
   <!-- Scripts -->
-  <script>
-    function toggleSidebar(){
-      document.getElementById("sidebar").classList.toggle("collapsed");
-    }
+<script>
+  function toggleSidebar(){
+    document.getElementById("sidebar").classList.toggle("collapsed");
+  }
 
-    // ================== Stats & Graph Data ==================
-    async function loadDashboardData(){
-      try{
-        const res = await fetch("/api/stats/");
-        const data = await res.json();
+  // ================== Stats & Graph Data ==================
+  async function loadDashboardData(){
+    try{
+      const res = await fetch("/api/stats/");
+      const data = await res.json();
 
-        document.getElementById("visitorsCount").innerText = data.total_visitors || 0;
-        document.getElementById("chatsCount").innerText = data.total_chats || 0;
-        document.getElementById("feedbackCount").innerText = (data.feedback_percent || 0) + "%";
-        document.getElementById("pageViewsCount").innerText = data.page_views_total || 0;
+      document.getElementById("visitorsCount").innerText = data.total_visitors || 0;
+      document.getElementById("chatsCount").innerText = data.total_chats || 0;
+      document.getElementById("feedbackCount").innerText = (data.feedback_percent || 0) + "%";
+      document.getElementById("pageViewsCount").innerText = data.page_views_total || 0;
 
-        new Chart(document.getElementById('visitorsChart'), {
-          type: 'bar',
-          data: {
-            labels: data.months || [],
-            datasets: [{ label:"Visitors", data:data.visitors_data||[], backgroundColor:"#2563eb" }]
-          },
-          options:{responsive:true,scales:{y:{beginAtZero:true}}}
-        });
+      new Chart(document.getElementById('visitorsChart'), {
+        type: 'bar',
+        data: {
+          labels: data.months || [],
+          datasets: [{ label:"Visitors", data:data.visitors_data||[], backgroundColor:"#2563eb" }]
+        },
+        options:{responsive:true,scales:{y:{beginAtZero:true}}}
+      });
 
-        new Chart(document.getElementById('chatsChart'), {
-          type: 'bar',
-          data: {
-            labels: data.months || [],
-            datasets: [{ label:"Active Chats", data:data.chats_data||[], backgroundColor:"#10b981" }]
-          },
-          options:{responsive:true,scales:{y:{beginAtZero:true}}}
-        });
+      new Chart(document.getElementById('chatsChart'), {
+        type: 'bar',
+        data: {
+          labels: data.months || [],
+          datasets: [{ label:"Active Chats", data:data.chats_data||[], backgroundColor:"#10b981" }]
+        },
+        options:{responsive:true,scales:{y:{beginAtZero:true}}}
+      });
 
-        // ✅ DEMO PIE CHART (hardcoded data)
-        const demoPieData = [25, 15, 20, 10, 30];
-        new Chart(document.getElementById('pageViewsChart'), {
-          type: 'pie',
-          data: {
-            labels: ["Home","Products","About","Contact","Blog"],
-            datasets: [{ data: demoPieData, backgroundColor:["#2563eb","#10b981","#f59e0b","#ef4444","#8b5cf6"] }]
-          },
-          options:{responsive:true}
-        });
-      }catch(err){console.error("Dashboard load error:",err);}
-    }
+      // ✅ DEMO PIE CHART (hardcoded data)
+      const demoPieData = [25, 15, 20, 10, 30];
+      new Chart(document.getElementById('pageViewsChart'), {
+        type: 'pie',
+        data: {
+          labels: ["Home","Products","About","Contact","Blog"],
+          datasets: [{ data: demoPieData, backgroundColor:["#2563eb","#10b981","#f59e0b","#ef4444","#8b5cf6"] }]
+        },
+        options:{responsive:true}
+      });
+    }catch(err){console.error("Dashboard load error:",err);}
+  }
 
-    // ================== Location ==================
-    async function loadLocation(){
-      try{
-        const res = await fetch("/api/location/");
-        const data = await res.json();
-        if(data.city && data.country){
-          document.getElementById("locationCard").innerText = data.city + ", " + data.country;
-        }else{
-          document.getElementById("locationCard").innerText = "Unknown";
-        }
-      }catch(err){
-        document.getElementById("locationCard").innerText = "Error";
+  // ================== Location ==================
+  async function loadLocation(){
+    try{
+      const res = await fetch("/api/location/");
+      const data = await res.json();
+      if(data.city && data.country){
+        document.getElementById("locationCard").innerText = data.city + ", " + data.country;
+      }else{
+        document.getElementById("locationCard").innerText = "Unknown";
       }
+    }catch(err){
+      document.getElementById("locationCard").innerText = "Error";
     }
+  }
 
-    // ================== Chat Section ==================
-    let currentContactId = null;
-    const chatBox = document.getElementById("chatBox");
-    const msgInput = document.getElementById("chatInput");
-    const sendBtn = document.getElementById("sendBtn");
+  // ================== Chat Section ==================
+  let currentContactId = null;
+  const chatBox = document.getElementById("chatBox");
+  const msgInput = document.getElementById("chatInput");
+  const sendBtn = document.getElementById("sendBtn");
 
-    function appendMessage(sender,message){
-      const div=document.createElement("div");
-      div.className="msg "+(sender.toLowerCase()==="admin"?"admin":"user");
-      div.innerHTML=`${message}`;
-      chatBox.appendChild(div);
-      chatBox.scrollTop=chatBox.scrollHeight;
-    }
+  function appendMessage(sender,message){
+    const div=document.createElement("div");
+    div.className="msg "+(sender.toLowerCase()==="admin"?"admin":"user");
+    div.innerHTML=`${message}`;
+    chatBox.appendChild(div);
+    chatBox.scrollTop=chatBox.scrollHeight;
+  }
 
-    function loadMessages(contactId){
-      currentContactId = contactId;
-      fetch(`/api/messages/${contactId}/`).then(res=>res.json()).then(data=>{
-        chatBox.innerHTML="";
-        if(!data.messages?.length){
-          chatBox.innerHTML="<div class='loading'>No messages yet.</div>"; return;
-        }
-        data.messages.slice().reverse().forEach(m=>appendMessage(m.sender||"User", m.text||""));
-      });
-    }
-
-    function sendMessage(){
-      if(!currentContactId){ alert("Select a lead first"); return; }   
-      const text=msgInput.value.trim(); if(!text) return;
-      appendMessage("Admin",text); msgInput.value="";
-      fetch("/api/admin-send/",{
-        method:"POST", headers:{"Content-Type":"application/json"},
-        body:JSON.stringify({contact_id:currentContactId,message:text})
-      });
-    }
-    sendBtn.addEventListener("click",sendMessage);
-    msgInput.addEventListener("keypress",e=>{ if(e.key==="Enter") sendMessage(); });
-
-    const evtSource=new EventSource("/api/lead-stream/");
-    evtSource.onmessage=function(event){
-      try{
-        const data=JSON.parse(event.data||"{}");
-        if(Number(data.contact_id)===Number(currentContactId)){
-          appendMessage(data.sender||"User", data.text||"[No content]");
-        }
-      }catch(e){}
-    };
-
-    // ================== Leads ==================
-   function loadLeads(){
-  fetch("/api/contacts/").then(res=>res.json()).then(data=>{
-    const leadList=document.getElementById("leadList");
-    leadList.innerHTML="";
-    if(!data.contacts?.length){ 
-      leadList.innerHTML="<div class='loading'>No leads found.</div>"; 
-      return; 
-    }
-    data.contacts.forEach(c=>{
-      const div=document.createElement("div");
-      div.className="lead-item";
-      div.innerText=(c.contact_value||"Unknown")+" ("+(c.contact_type||"temp")+")";
-      div.onclick=()=>{ loadMessages(c.id); };
-
-      // ✅ Naye lead ko list ke upar add karna
-      leadList.prepend(div);
+  function loadMessages(contactId){
+    currentContactId = contactId;
+    fetch(`/api/messages/${contactId}/`).then(res=>res.json()).then(data=>{
+      chatBox.innerHTML="";
+      if(!data.messages?.length){
+        chatBox.innerHTML="<div class='loading'>No messages yet.</div>"; return;
+      }
+      // ✅ WhatsApp style (oldest upar, latest niche)
+      data.messages.forEach(m=>appendMessage(m.sender||"User", m.text||""));
     });
-  });
-}
+  }
 
+  function sendMessage(){
+    if(!currentContactId){ alert("Select a lead first"); return; }   
+    const text=msgInput.value.trim(); if(!text) return;
+    appendMessage("Admin",text); msgInput.value="";
+    fetch("/api/admin-send/",{
+      method:"POST", headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({contact_id:currentContactId,message:text})
+    });
+  }
+  sendBtn.addEventListener("click",sendMessage);
+  msgInput.addEventListener("keypress",e=>{ if(e.key==="Enter") sendMessage(); });
 
-    loadDashboardData();
-    loadLeads();
-    loadLocation();
-  </script>
+  const evtSource=new EventSource("/api/lead-stream/");
+  evtSource.onmessage=function(event){
+    try{
+      const data=JSON.parse(event.data||"{}");
+      if(Number(data.contact_id)===Number(currentContactId)){
+        appendMessage(data.sender||"User", data.text||"[No content]");
+      }
+    }catch(e){}
+  };
+
+  // ================== Leads ==================
+  function loadLeads(){
+    fetch("/api/contacts/").then(res=>res.json()).then(data=>{
+      const leadList=document.getElementById("leadList");
+      leadList.innerHTML="";
+      if(!data.contacts?.length){ 
+        leadList.innerHTML="<div class='loading'>No leads found.</div>"; 
+        return; 
+      }
+      data.contacts.forEach(c=>{
+        const div=document.createElement("div");
+        div.className="lead-item";
+        div.innerText=(c.contact_value||"Unknown")+" ("+(c.contact_type||"temp")+")";
+        div.onclick=()=>{ loadMessages(c.id); };
+
+        // ✅ Normal append (backend already latest-first)
+        leadList.appendChild(div);
+      });
+    });
+  }
+
+  loadDashboardData();
+  loadLeads();
+  loadLocation();
+</script>
 </body>
 </html>
