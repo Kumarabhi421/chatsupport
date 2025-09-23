@@ -61,7 +61,7 @@
     <div id="box" class="chat-messages"></div>
     <div class="chat-input">
       <input id="inp" type="text" placeholder="Type your message..." />
-      <!-- ✅ Fix: type="button" added -->
+      <!-- ✅ Button type fixed -->
       <button type="button" id="sendBtn">Send</button>
     </div>
   </div>
@@ -105,7 +105,8 @@
       inp.value = '';
       try{
         const data = await hit(text);
-        if(data && data.contact_id){
+        // ✅ Contact ID overwrite tabhi hoga jab pehle se null ho
+        if(data && data.contact_id && !contactId){
           contactId = data.contact_id;
           tokenBox.textContent = "🆔 Your Token: " + contactId;
           if(!initialGreetingAdded){
@@ -120,7 +121,7 @@
 
     sendBtn.onclick = send;
 
-    // ✅ Fix: preventDefault added
+    // ✅ Prevent default enter behavior (no refresh)
     inp.addEventListener('keydown', (e)=>{
       if(e.key==='Enter'){
         e.preventDefault();
@@ -128,22 +129,25 @@
       }
     });
 
-    fetch("/api/save-contact/", {
-      method:"POST",
-      headers:{"Content-Type":"application/json"},
-      body:JSON.stringify({})
-    })
-    .then(res => res.json())
-    .then(data => {
-      if(data && data.id){
-        contactId = data.id;
-        tokenBox.textContent = "🆔 Your Token: " + contactId;
-        if(!initialGreetingAdded){
-          addMsg("🙏 Namaste! How can I help you today?", 'bot');
-          initialGreetingAdded = true;
+    // ✅ Save contact sirf tabhi jab pehle se contactId nahi hai
+    if(!contactId){
+      fetch("/api/save-contact/", {
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({})
+      })
+      .then(res => res.json())
+      .then(data => {
+        if(data && data.id){
+          contactId = data.id;
+          tokenBox.textContent = "🆔 Your Token: " + contactId;
+          if(!initialGreetingAdded){
+            addMsg("🙏 Namaste! How can I help you today?", 'bot');
+            initialGreetingAdded = true;
+          }
         }
-      }
-    });
+      });
+    }
 
     setInterval(() => {
       if(contactId){
