@@ -22,9 +22,6 @@
     .chat-header{
       background:linear-gradient(135deg,#5f17e6,#8e2de2);
       color:#fff; padding:14px; font-weight:700; text-align:center;
-      display:flex; flex-direction:column; gap:4px; align-items:center; justify-content:center;
-      position:relative;
-      z-index:1;
     }
     .token-info{
       font-size:12px; font-weight:400; color:#ffe;
@@ -40,7 +37,6 @@
     .chat-messages{
       flex:1; overflow-y:auto; padding:12px; display:flex; flex-direction:column; gap:10px;
       background:#f6f6fb;
-      margin-top:0px;
     }
     .msg{max-width:80%; padding:10px 12px; border-radius:12px; word-wrap:break-word; font-size:14px;}
     .bot{align-self:flex-start; background:#f1f1f1;}
@@ -61,7 +57,7 @@
     <div id="box" class="chat-messages"></div>
     <div class="chat-input">
       <input id="inp" type="text" placeholder="Type your message..." />
-      <!-- ✅ Button type fixed -->
+      <!-- ✅ Button type fix -->
       <button type="button" id="sendBtn">Send</button>
     </div>
   </div>
@@ -105,7 +101,8 @@
       inp.value = '';
       try{
         const data = await hit(text);
-        // ✅ Contact ID overwrite tabhi hoga jab pehle se null ho
+
+        // ✅ contactId sirf tab set karo jab pehle null ho
         if(data && data.contact_id && !contactId){
           contactId = data.contact_id;
           tokenBox.textContent = "🆔 Your Token: " + contactId;
@@ -114,6 +111,12 @@
             initialGreetingAdded = true;
           }
         }
+
+        // ✅ bot ka reply turant dikhana
+        if(data && data.reply){
+          addMsg(data.reply, 'bot');
+        }
+
       }catch(e){
         addMsg('⚠️ Error connecting to server.','bot');
       }
@@ -121,7 +124,7 @@
 
     sendBtn.onclick = send;
 
-    // ✅ Prevent default enter behavior (no refresh)
+    // ✅ Enter pe page refresh rokna
     inp.addEventListener('keydown', (e)=>{
       if(e.key==='Enter'){
         e.preventDefault();
@@ -129,7 +132,7 @@
       }
     });
 
-    // ✅ Save contact sirf tabhi jab pehle se contactId nahi hai
+    // ✅ save-contact sirf pehli baar
     if(!contactId){
       fetch("/api/save-contact/", {
         method:"POST",
@@ -149,6 +152,7 @@
       });
     }
 
+    // ✅ polling latest messages ke liye
     setInterval(() => {
       if(contactId){
         fetch(`/api/messages/${contactId}/`)
