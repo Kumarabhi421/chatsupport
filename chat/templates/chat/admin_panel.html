@@ -276,23 +276,26 @@
     };
 
     // ================== Leads ==================
-    function loadLeads(){
-      fetch("/api/contacts/").then(res=>res.json()).then(data=>{
-        const leadList=document.getElementById("leadList");
-        leadList.innerHTML="";
-        if(!data.contacts?.length){ 
-          leadList.innerHTML="<div class='loading'>No leads found.</div>"; 
-          return; 
-        }
-        data.contacts.slice().reverse().forEach(c=>{
-          const div=document.createElement("div");
-          div.className="lead-item";
-          div.innerText=(c.contact_value||"Unknown")+" ("+(c.contact_type||"temp")+")";
-          div.onclick=()=>{ loadMessages(c.id); };
-          leadList.appendChild(div);
-        });
-      });
+   function loadLeads(){
+  fetch("/api/contacts/").then(res=>res.json()).then(data=>{
+    const leadList=document.getElementById("leadList");
+    leadList.innerHTML="";
+    if(!data.contacts?.length){ 
+      leadList.innerHTML="<div class='loading'>No leads found.</div>"; 
+      return; 
     }
+    data.contacts.forEach(c=>{
+      const div=document.createElement("div");
+      div.className="lead-item";
+      div.innerText=(c.contact_value||"Unknown")+" ("+(c.contact_type||"temp")+")";
+      div.onclick=()=>{ loadMessages(c.id); };
+
+      // ✅ Naye lead ko list ke upar add karna
+      leadList.prepend(div);
+    });
+  });
+}
+
 
     loadDashboardData();
     loadLeads();
