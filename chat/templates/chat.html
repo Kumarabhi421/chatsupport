@@ -89,7 +89,10 @@
     async function send(){
       const text = inp.value.trim();
       if(!text) return;
-      addMsg(text,'user');
+
+      // 👇 frontend me turant show karo
+      addMsg(text, 'user', 'local-' + Date.now());
+
       inp.value = '';
       try{
         const data = await hit(text);
@@ -134,8 +137,12 @@
           .then(res => res.json())
           .then(data => {
             (data.messages || []).forEach(msg => {
-              const who = (msg.sender || "").toLowerCase() === "admin" ? "admin" :
-                          ((msg.sender || "").toLowerCase() === "user" ? "user" : "bot");
+              const sender = (msg.sender || "").toLowerCase();
+
+              // 👇 user ke messages ko skip karo (warna duplicate dikhte)
+              if(sender === "user") return;
+
+              const who = sender === "admin" ? "admin" : "bot";
               addMsg(msg.text, who, msg.id);
             });
           })
@@ -145,7 +152,3 @@
   </script>
 </body>
 </html>
-
-
-
-
