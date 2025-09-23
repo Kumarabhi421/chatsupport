@@ -6,58 +6,54 @@
   <title>Website Chat Support</title>
   <style>
     body{
-      font-family: Arial, sans-serif; 
-      background: linear-gradient(135deg,#2d1582,#4a00e0);
-      height:100vh; margin:0;
-      display:flex; align-items:center; justify-content:center;
+      font-family: Arial, sans-serif;
+      background:linear-gradient(135deg,#2d1582,#4a00e0);
+      height:100vh;margin:0;
+      display:flex;align-items:center;justify-content:center;
     }
     .chat-container{
-      width:350px; height:520px;
+      width:350px;height:520px;
       background:rgba(255,255,255,.95);
-      border-radius:16px; overflow:hidden;
+      border-radius:16px;overflow:hidden;
       box-shadow:0 10px 30px rgba(0,0,0,.25);
-      display:flex; flex-direction:column;
-      position:relative;
+      display:flex;flex-direction:column;
     }
     .chat-header{
       background:linear-gradient(135deg,#5f17e6,#8e2de2);
-      color:#fff; padding:14px; font-weight:700; text-align:center;
+      color:#fff;padding:14px;font-weight:700;text-align:center;
     }
     .token-info{
-      font-size:12px; font-weight:400; color:#ffe;
-      position:fixed;
-      top:5px;
-      right:50%;
+      font-size:12px;font-weight:400;color:#ffe;
+      position:fixed;top:5px;right:50%;
       transform:translateX(50%);
       background:rgba(0,0,0,0.5);
-      padding:4px 8px;
-      border-radius:8px;
-      z-index:9999;
+      padding:4px 8px;border-radius:8px;
     }
     .chat-messages{
-      flex:1; overflow-y:auto; padding:12px; display:flex; flex-direction:column; gap:10px;
+      flex:1;overflow-y:auto;padding:12px;
+      display:flex;flex-direction:column;gap:10px;
       background:#f6f6fb;
     }
-    .msg{max-width:80%; padding:10px 12px; border-radius:12px; word-wrap:break-word; font-size:14px;}
-    .bot{align-self:flex-start; background:#f1f1f1;}
-    .admin{align-self:flex-start; background:#ffe791; font-weight:600; border:1px solid #e6c300;}
-    .user{align-self:flex-end; background:linear-gradient(135deg,#6e8efb,#a777e3); color:#fff;}
-    .chat-input{display:flex; border-top:1px solid #e5e5e5;}
-    .chat-input input{flex:1; border:0; padding:12px; outline:none;}
-    .chat-input button{border:0; padding:0 18px; color:#fff; cursor:pointer; font-weight:700;
-      background:linear-gradient(135deg,#5f17e6,#8e2de2);}
+    .msg{max-width:80%;padding:10px 12px;border-radius:12px;word-wrap:break-word;font-size:14px;}
+    .bot{align-self:flex-start;background:#f1f1f1;}
+    .admin{align-self:flex-start;background:#ffe791;font-weight:600;border:1px solid #e6c300;}
+    .user{align-self:flex-end;background:linear-gradient(135deg,#6e8efb,#a777e3);color:#fff;}
+    .chat-input{display:flex;border-top:1px solid #e5e5e5;}
+    .chat-input input{flex:1;border:0;padding:12px;outline:none;}
+    .chat-input button{
+      border:0;padding:0 18px;color:#fff;
+      cursor:pointer;font-weight:700;
+      background:linear-gradient(135deg,#5f17e6,#8e2de2);
+    }
   </style>
 </head>
 <body>
   <div class="chat-container">
-    <div class="chat-header">
-      💬 Website Chat Support
-    </div>
+    <div class="chat-header">💬 Website Chat Support</div>
     <div class="token-info" id="tokenBox"></div>
     <div id="box" class="chat-messages"></div>
     <div class="chat-input">
       <input id="inp" type="text" placeholder="Type your message..." />
-      <!-- ✅ Button type fix -->
       <button type="button" id="sendBtn">Send</button>
     </div>
   </div>
@@ -73,8 +69,7 @@
     let initialGreetingAdded = false;
 
     function addMsg(text, who, id=null){
-      const regex = /(\b\d{10,}\b|[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,})/ig;
-      if(regex.test(text)) return;
+      if(!text) return;
       if(id && displayedMsgIds.has(id)) return;
       if(id) displayedMsgIds.add(id);
 
@@ -86,12 +81,12 @@
     }
 
     async function hit(message){
-      const r = await fetch('/api/get-response/', {
+      const res = await fetch('/api/get-response/', {
         method:'POST',
         headers:{'Content-Type':'application/json'},
         body:JSON.stringify({message, contact_id: contactId})
       });
-      return r.json();
+      return res.json();
     }
 
     async function send(){
@@ -101,72 +96,59 @@
       inp.value = '';
       try{
         const data = await hit(text);
-
-        // ✅ contactId sirf tab set karo jab pehle null ho
-        if(data && data.contact_id && !contactId){
+        if(data?.contact_id && !contactId){
           contactId = data.contact_id;
           tokenBox.textContent = "🆔 Your Token: " + contactId;
-          if(!initialGreetingAdded){
-            addMsg("🙏 Namaste! How can I help you today?", 'bot');
-            initialGreetingAdded = true;
-          }
         }
-
-        // ✅ bot ka reply turant dikhana
-        if(data && data.reply){
-          addMsg(data.reply, 'bot');
-        }
-
-      }catch(e){
+        if(data?.reply) addMsg(data.reply,'bot');
+      }catch{
         addMsg('⚠️ Error connecting to server.','bot');
       }
     }
 
+    // ✅ Button click
     sendBtn.onclick = send;
 
-    // ✅ Enter pe page refresh rokna
-    inp.addEventListener('keydown', (e)=>{
+    // ✅ Enter key par page refresh rokna
+    inp.addEventListener('keydown', e=>{
       if(e.key==='Enter'){
         e.preventDefault();
         send();
       }
     });
 
-    // ✅ save-contact sirf pehli baar
-    if(!contactId){
-      fetch("/api/save-contact/", {
-        method:"POST",
-        headers:{"Content-Type":"application/json"},
-        body:JSON.stringify({})
-      })
-      .then(res => res.json())
-      .then(data => {
-        if(data && data.id){
-          contactId = data.id;
-          tokenBox.textContent = "🆔 Your Token: " + contactId;
-          if(!initialGreetingAdded){
-            addMsg("🙏 Namaste! How can I help you today?", 'bot');
-            initialGreetingAdded = true;
-          }
+    // ✅ Save-contact only once
+    fetch("/api/save-contact/", {
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({})
+    })
+    .then(res => res.json())
+    .then(data => {
+      if(data?.id){
+        contactId = data.id;
+        tokenBox.textContent = "🆔 Your Token: " + contactId;
+        if(!initialGreetingAdded){
+          addMsg("🙏 Namaste! How can I help you today?",'bot');
+          initialGreetingAdded = true;
         }
-      });
-    }
-
-    // ✅ polling latest messages ke liye
-    setInterval(() => {
-      if(contactId){
-        fetch(`/api/messages/${contactId}/`)
-          .then(res => res.json())
-          .then(data => {
-            (data.messages || []).forEach(msg => {
-              const who = (msg.sender || "").toLowerCase() === "admin" ? "admin" :
-                          ((msg.sender || "").toLowerCase() === "user" ? "user" : "bot");
-              addMsg(msg.text, who, msg.id);
-            });
-          })
-          .catch(err => console.error("Polling error:", err));
       }
-    }, 3000);
+    });
+
+    // ✅ Polling for new messages
+    setInterval(()=>{
+      if(!contactId) return;
+      fetch(`/api/messages/${contactId}/`)
+        .then(r=>r.json())
+        .then(d=>{
+          (d.messages||[]).forEach(msg=>{
+            const who = (msg.sender||"").toLowerCase()==="admin" ? "admin" :
+                        ((msg.sender||"").toLowerCase()==="user" ? "user" : "bot");
+            addMsg(msg.text,who,msg.id);
+          });
+        })
+        .catch(err=>console.error("Polling error:",err));
+    },3000);
   </script>
 </body>
 </html>
