@@ -1,3 +1,5 @@
+
+
 # from pathlib import Path
 # import os
 # import random
@@ -40,16 +42,19 @@
 #     'django.contrib.messages',
 #     'django.contrib.staticfiles',
 
-#     # Your apps
-#     'chat',
+#     # Third party apps
 #     'corsheaders',
 #     'rest_framework',
 #     'ipware',
+
+#     # Your apps
+#     'chat',
 # ]
 
 # MIDDLEWARE = [
+#     "corsheaders.middleware.CorsMiddleware",        # ✅ must be first
 #     "django.middleware.security.SecurityMiddleware",
-#     "whitenoise.middleware.WhiteNoiseMiddleware",  # Serve static files
+#     "whitenoise.middleware.WhiteNoiseMiddleware",   # Serve static files
 #     "django.contrib.sessions.middleware.SessionMiddleware",
 #     "django.middleware.common.CommonMiddleware",
 #     "django.middleware.csrf.CsrfViewMiddleware",
@@ -59,11 +64,6 @@
 # ]
 
 # ROOT_URLCONF = 'support_chat.urls'
-# ================================
-# X-Frame Options (Iframe allow)
-# ================================
-X_FRAME_OPTIONS = 'ALLOWALL'
-
 
 # TEMPLATES = [
 #     {
@@ -82,6 +82,8 @@ X_FRAME_OPTIONS = 'ALLOWALL'
 # ]
 
 # WSGI_APPLICATION = 'support_chat.wsgi.application'
+# # If using WebSockets later → uncomment this
+# # ASGI_APPLICATION = 'support_chat.asgi.application'
 
 # # ================================
 # # DATABASE (Render PostgreSQL)
@@ -89,18 +91,16 @@ X_FRAME_OPTIONS = 'ALLOWALL'
 # DATABASES = {
 #     'default': {
 #         'ENGINE': 'django.db.backends.postgresql',
-#         'NAME': 'chatsupport_db',   # DB name
-#         'USER': 'chatsupport_db_user',   # DB user
-#         'PASSWORD': 'Mbkcr08iVLof4LB86nYUanljnKRodZwd',   # Password
-#         'HOST': 'dpg-d2tsqgruibrs73f3qd30-a.oregon-postgres.render.com',   # Host
-#         'PORT': '5432',   # PostgreSQL default port
+#         'NAME': 'chatsupport_db',
+#         'USER': 'chatsupport_db_user',
+#         'PASSWORD': 'Mbkcr08iVLof4LB86nYUanljnKRodZwd',
+#         'HOST': 'dpg-d2tsqgruibrs73f3qd30-a.oregon-postgres.render.com',
+#         'PORT': '5432',
 #         'OPTIONS': {
-#             'sslmode': 'require',   # Render DB needs SSL
+#             'sslmode': 'require',
 #         },
 #     }
 # }
-
-
 
 # # ================================
 # # PASSWORD VALIDATION
@@ -129,6 +129,15 @@ X_FRAME_OPTIONS = 'ALLOWALL'
 # STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 
 # # ================================
+# # CORS Settings
+# # ================================
+# CORS_ALLOWED_ORIGINS = [
+#     f"https://{RENDER_HOSTNAME}",
+#     "http://127.0.0.1:8000",
+#     "http://localhost:8000",
+# ]
+
+# # ================================
 # # DEFAULT PRIMARY KEY
 # # ================================
 # DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
@@ -137,25 +146,6 @@ X_FRAME_OPTIONS = 'ALLOWALL'
 # # SERVER RUN ID (optional)
 # # ================================
 # SERVER_RUN_ID = ''.join(random.choices(string.ascii_letters + string.digits, k=12))
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 from pathlib import Path
@@ -294,6 +284,19 @@ CORS_ALLOWED_ORIGINS = [
     "http://127.0.0.1:8000",
     "http://localhost:8000",
 ]
+
+# ================================
+# Iframe + Cookie Settings
+# ================================
+# ✅ Allow iframe embedding
+X_FRAME_OPTIONS = "ALLOWALL"
+
+# ✅ Cookies for iframe (important for sessions inside iframe)
+SESSION_COOKIE_SAMESITE = "None"
+SESSION_COOKIE_SECURE = not DEBUG  # HTTPS required in production
+
+CSRF_COOKIE_SAMESITE = "None"
+CSRF_COOKIE_SECURE = not DEBUG
 
 # ================================
 # DEFAULT PRIMARY KEY
