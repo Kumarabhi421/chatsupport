@@ -185,7 +185,7 @@ def _best_reply(user_message: str) -> str:
         if key in user_message:
             return reply
 
-    return RESPONSES["default"]
+    return "Hello! How can I help you?"
 
 # ================= CONTACT INFO EXTRACTION =================
 def extract_contact_info(text: str):
