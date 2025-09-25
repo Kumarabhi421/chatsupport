@@ -34,9 +34,10 @@ RESPONSES = {
     # Contact Info
     "contact": "You can reach us at contact@urgentitsolution.com or visit our website at https://urgentitsolution.com/",
     "email": "Our official email is contact@urgentitsolution.com. Feel free to write to us.",
-    "phone": "You can call us at +91-XXXXXXXXXX for any queries.",
+    "phone": "You can call us at +91-7303468125 for any queries.",
     "address": "We are located in Noida, Uttar Pradesh, India.",
     "location": "Our office is in Noida, Uttar Pradesh. Visit us anytime during business hours.",
+   "support": "You can call us at +91-7303468125 for any queries.",
     
     # Website & Technical
     "website": "You can explore our services at https://urgentitsolution.com/",
