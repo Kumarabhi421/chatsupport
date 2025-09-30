@@ -4,8 +4,8 @@
   <meta charset="UTF-8">
   <title>Admin Panel</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>  
     body { background: #f4f6f9; margin:0; font-family:Segoe UI,Tahoma; }
     .sidebar {
@@ -22,29 +22,26 @@
       font-size: 0.95rem;
     }
     .sidebar a:hover { background: #1f2937; }
-    .main-content { margin-left: 260px; padding: 20px; transition: margin-left 0.3s; }
+    .main-content { margin-left: 260px; padding: 20px; transition: margin-left 0.3s; position: relative; }
     .collapsed ~ .main-content { margin-left: 80px; }
-    .card { 
-      border-radius: 14px; 
-      box-shadow: 0 4px 10px rgba(0,0,0,.08); 
-      transition: transform .2s;
-    }
+    .logout-btn { position:absolute; top:20px; right:20px; }
+    .card { border-radius: 14px; box-shadow: 0 4px 10px rgba(0,0,0,.08); transition: transform .2s; }
     .card:hover { transform: translateY(-4px); }
     .stat-icon { font-size: 1.5rem; opacity:0.8; }
-    .chat-box {
-      height: 400px; overflow-y: auto; background: #fff; padding: 15px;
-      border-radius: 12px; box-shadow: 0 2px 6px rgba(0,0,0,.1);
-    }
+    .chat-box { height: 400px; overflow-y: auto; background: #fff; padding: 15px;
+      border-radius: 12px; box-shadow: 0 2px 6px rgba(0,0,0,.1); }
     .msg { margin: 8px 0; padding:8px 12px; border-radius:8px; display:inline-block; max-width:70%; }
     .msg.admin { float:right; background:#d9fce7; color:#111; clear:both; }
     .msg.user { float:left; background:#e7f1ff; color:#111; clear:both; }
-    .lead-item {
-      padding:8px; margin:5px 0; border-radius:6px; background:#1f2937;
-      cursor:pointer; font-size:0.9rem;
-    }
+    .lead-item { padding:8px; margin:5px 0; border-radius:6px; background:#1f2937;
+      cursor:pointer; font-size:0.9rem; }
     .lead-item:hover { background:#374151; }
     .toggle-btn { cursor:pointer; font-size:1.3rem; margin-bottom:20px; display:inline-block; }
     .loading { text-align:center; padding:20px; font-size:0.9rem; color:#555; }
+    .section { display:none; }
+    .section.active { display:block; }
+
+    
   </style>
 </head>
 <body>
@@ -52,11 +49,12 @@
   <div class="sidebar" id="sidebar">
     <span class="toggle-btn text-white" onclick="toggleSidebar()"><i class="bi bi-list"></i></span>
     <h2>Admin Panel</h2>
-    <a href="#"><i class="bi bi-speedometer2"></i><span>Dashboard</span></a>
+    <a href="#" onclick="showSection('dashboard')"><i class="bi bi-speedometer2"></i><span>Dashboard</span></a>
     <a href="#"><i class="bi bi-people"></i><span>Visitors</span></a>
     <a href="#"><i class="bi bi-chat-dots"></i><span>Chats</span></a>
     <a href="#"><i class="bi bi-bar-chart"></i><span>Page Views</span></a>
     <a href="#"><i class="bi bi-gear"></i><span>Settings</span></a>
+    <a href="#" onclick="showSection('profile')"><i class="bi bi-person-circle"></i><span>Profile</span></a>
     <hr>
     <h6>Leads</h6>
     <div id="leadList"><div class="loading">Loading leads...</div></div>
@@ -64,242 +62,229 @@
 
   <!-- Main Content -->
   <div class="main-content">
-    <h3 class="mb-4">Dashboard Overview</h3>
-    
-    <!-- Stats Cards -->
-    <div class="row mb-4 g-3">
-      <div class="col-md-3">
-        <div class="card p-3 bg-light">
-          <div class="d-flex justify-content-between align-items-center">
-            <div>
-              <h6>Total Visitors</h6>
-              <h3 id="visitorsCount">0</h3>
+    <!-- Logout Button -->
+    <form method="post" action="{% url 'website_admin_logout' %}" class="logout-btn">
+      {% csrf_token %}
+      <button type="submit" class="btn btn-danger"><i class="bi bi-box-arrow-right"></i> Logout</button>
+    </form>
+
+    <!-- Dashboard Section -->
+    <div id="dashboard" class="section active">
+      <h3 class="mb-2">Dashboard Overview</h3>
+      <h6 id="currentWebsite" style="color:#555;">Website: {{ website.website_url }}</h6>
+      <div class="row mb-4 g-3">
+        <div class="col-md-3">
+          <div class="card p-3 bg-light">
+            <div class="d-flex justify-content-between align-items-center">
+              <div><h6>Total Visitors</h6><h3 id="visitorsCount">0</h3></div>
+              <i class="bi bi-person-lines-fill stat-icon text-primary"></i>
             </div>
-            <i class="bi bi-person-lines-fill stat-icon text-primary"></i>
+          </div>
+        </div>
+        <div class="col-md-3">
+          <div class="card p-3 bg-light">
+            <div class="d-flex justify-content-between align-items-center">
+              <div><h6>Active Chats</h6><h3 id="chatsCount">0</h3></div>
+              <i class="bi bi-chat-left-text-fill stat-icon text-success"></i>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-3">
+          <div class="card p-3 bg-light">
+            <div class="d-flex justify-content-between align-items-center">
+              <div><h6>Positive Feedback</h6><h3 id="feedbackCount">0%</h3></div>
+              <i class="bi bi-hand-thumbs-up-fill stat-icon text-warning"></i>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-3">
+          <div class="card p-3 bg-light">
+            <div class="d-flex justify-content-between align-items-center">
+              <div><h6>Page Views</h6><h3 id="pageViewsCount">0</h3></div>
+              <i class="bi bi-eye-fill stat-icon text-danger"></i>
+            </div>
           </div>
         </div>
       </div>
-      <div class="col-md-3">
-        <div class="card p-3 bg-light">
-          <div class="d-flex justify-content-between align-items-center">
-            <div>
-              <h6>Active Chats</h6>
-              <h3 id="chatsCount">0</h3>
-            </div>
-            <i class="bi bi-chat-left-text-fill stat-icon text-success"></i>
-          </div>
-        </div>
+
+      <div class="row g-3">
+        <div class="col-md-4"><div class="card p-3"><h6>Visitors Historical Data</h6><canvas id="visitorsChart"></canvas></div></div>
+        <div class="col-md-4"><div class="card p-3"><h6>Active Chats Historical Data</h6><canvas id="chatsChart"></canvas></div></div>
+        <div class="col-md-4"><div class="card p-3"><h6>Page Views Distribution</h6><canvas id="pageViewsChart"></canvas></div></div>
       </div>
-      <div class="col-md-3">
-        <div class="card p-3 bg-light">
-          <div class="d-flex justify-content-between align-items-center">
-            <div>
-              <h6>Positive Feedback</h6>
-              <h3 id="feedbackCount">0%</h3>
+
+      <div class="row mt-4">
+        <div class="col-md-12">
+          <div class="card p-3">
+            <h6>Live Chat</h6>
+            <div class="chat-box" id="chatBox"><div class="loading">No messages yet.</div></div>
+            <div class="d-flex mt-2">
+              <input type="text" id="chatInput" class="form-control me-2" placeholder="Type a message...">
+              <button class="btn btn-primary" id="sendBtn"><i class="bi bi-send"></i> Send</button>
             </div>
-            <i class="bi bi-hand-thumbs-up-fill stat-icon text-warning"></i>
-          </div>
-        </div>
-      </div>
-      <div class="col-md-3">
-        <div class="card p-3 bg-light">
-          <div class="d-flex justify-content-between align-items-center">
-            <div>
-              <h6>Page Views</h6>
-              <h3 id="pageViewsCount">0</h3>
-            </div>
-            <i class="bi bi-eye-fill stat-icon text-danger"></i>
-          </div>
-        </div>
-      </div>
-      <!-- Location Card -->
-      <div class="col-md-3">
-        <div class="card p-3 bg-light">
-          <div class="d-flex justify-content-between align-items-center">
-            <div>
-              <h6>Visitor Location</h6>
-              <h3 id="locationCard">Loading...</h3>
-            </div>
-            <i class="bi bi-geo-alt-fill stat-icon text-info"></i>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- Charts Row -->
-    <div class="row g-3">
-      <div class="col-md-4">
-        <div class="card p-3">
-          <h6>Visitors Historical Data</h6>
-          <canvas id="visitorsChart"></canvas>
+       <!-- Profile -->
+    <div id="profile" class="section">
+      <h3 class="mb-4 fw-bold"><i class="bi bi-person-badge"></i> Profile Management</h3>
+      <div class="card shadow-sm border-0">
+        <div class="card-header bg-primary text-white d-flex align-items-center">
+          <i class="bi bi-globe2 me-2"></i>
+          <h6 class="mb-0">Website Management</h6>
         </div>
-      </div>
-      <div class="col-md-4">
-        <div class="card p-3">
-          <h6>Active Chats Historical Data</h6>
-          <canvas id="chatsChart"></canvas>
-        </div>
-      </div>
-      <div class="col-md-4">
-        <div class="card p-3">
-          <h6>Page Views Distribution</h6>
-          <canvas id="pageViewsChart"></canvas>
-        </div>
-      </div>
-    </div>
-
-    <!-- Chat Box -->
-    <div class="row mt-4">
-      <div class="col-md-12">
-        <div class="card p-3">
-          <h6>Live Chat</h6>
-          <div class="chat-box" id="chatBox">
-            <div class="loading">No messages yet.</div>
-          </div>
-          <div class="d-flex mt-2">
-            <input type="text" id="chatInput" class="form-control me-2" placeholder="Type a message...">
-            <button class="btn btn-primary" id="sendBtn"><i class="bi bi-send"></i> Send</button>
-          </div>
+        <div class="card-body">
+          <form method="post" action="/save-website/">
+            {% csrf_token %}
+            <div class="row g-3">
+              <div class="col-md-6">
+                <label class="form-label fw-semibold"><i class="bi bi-hash"></i> Website ID</label>
+                <input type="text" class="form-control" value="" readonly placeholder="Auto-generated">
+              </div>
+              <div class="col-md-6">
+                <label class="form-label fw-semibold"><i class="bi bi-link-45deg"></i> Website URL</label>
+                <input type="url" class="form-control" name="website_url" placeholder="https://example.com" required>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label fw-semibold"><i class="bi bi-envelope"></i> Email</label>
+                <input type="email" class="form-control" name="email" placeholder="Enter email" required>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label fw-semibold"><i class="bi bi-lock"></i> Password</label>
+                <input type="password" class="form-control" name="password" placeholder="Enter password" required>
+              </div>
+            </div>
+            <div class="mt-3 text-end">
+              <button class="btn btn-success px-4" type="submit"><i class="bi bi-save"></i> Save Website</button>
+            </div>
+          </form>
         </div>
       </div>
     </div>
   </div>
 
+
   <!-- Scripts -->
-<script>
-  function toggleSidebar(){
-    document.getElementById("sidebar").classList.toggle("collapsed");
-  }
+ <script>
+function toggleSidebar(){ document.getElementById("sidebar").classList.toggle("collapsed"); }
+function showSection(id){
+  document.querySelectorAll(".section").forEach(s=>s.classList.remove("active"));
+  document.getElementById(id).classList.add("active");
+}
 
-  // ================== Stats & Graph Data ==================
-  async function loadDashboardData(){
-    try{
-      const res = await fetch("/api/stats/");
-      const data = await res.json();
+const websiteId = "{{ website.id }}"; // session website ID
 
-      document.getElementById("visitorsCount").innerText = data.total_visitors || 0;
-      document.getElementById("chatsCount").innerText = data.total_chats || 0;
-      document.getElementById("feedbackCount").innerText = (data.feedback_percent || 0) + "%";
-      document.getElementById("pageViewsCount").innerText = data.page_views_total || 0;
+// ================= Dashboard Data Load =================
+async function loadDashboardData(){
+  try{
+    const res = await fetch(`/api/stats/?website_id=${websiteId}`);
+    const data = await res.json();
+    document.getElementById("visitorsCount").innerText = data.total_visitors || 0;
+    document.getElementById("chatsCount").innerText = data.total_chats || 0;
+    document.getElementById("feedbackCount").innerText = (data.feedback_percent || 0) + "%";
+    document.getElementById("pageViewsCount").innerText = data.page_views_total || 0;
 
-      new Chart(document.getElementById('visitorsChart'), {
-        type: 'bar',
-        data: {
-          labels: data.months || [],
-          datasets: [{ label:"Visitors", data:data.visitors_data||[], backgroundColor:"#2563eb" }]
-        },
-        options:{responsive:true,scales:{y:{beginAtZero:true}}}
-      });
-
-      new Chart(document.getElementById('chatsChart'), {
-        type: 'bar',
-        data: {
-          labels: data.months || [],
-          datasets: [{ label:"Active Chats", data:data.chats_data||[], backgroundColor:"#10b981" }]
-        },
-        options:{responsive:true,scales:{y:{beginAtZero:true}}}
-      });
-
-      // ✅ DEMO PIE CHART (hardcoded data)
-      const demoPieData = [25, 15, 20, 10, 30];
-      new Chart(document.getElementById('pageViewsChart'), {
-        type: 'pie',
-        data: {
-          labels: ["Home","Products","About","Contact","Blog"],
-          datasets: [{ data: demoPieData, backgroundColor:["#2563eb","#10b981","#f59e0b","#ef4444","#8b5cf6"] }]
-        },
-        options:{responsive:true}
-      });
-    }catch(err){console.error("Dashboard load error:",err);}
-  }
-
-  // ================== Location ==================
-  async function loadLocation(){
-    try{
-      const res = await fetch("/api/location/");
-      const data = await res.json();
-      if(data.city && data.country){
-        document.getElementById("locationCard").innerText = data.city + ", " + data.country;
-      }else{
-        document.getElementById("locationCard").innerText = "Unknown";
-      }
-    }catch(err){
-      document.getElementById("locationCard").innerText = "Error";
-    }
-  }
-
-  // ================== Chat Section ==================
-  let currentContactId = null;
-  const chatBox = document.getElementById("chatBox");
-  const msgInput = document.getElementById("chatInput");
-  const sendBtn = document.getElementById("sendBtn");
-
-  function appendMessage(sender,message){
-    const div=document.createElement("div");
-    div.className="msg "+(sender.toLowerCase()==="admin"?"admin":"user");
-    div.innerHTML=`${message}`;
-    chatBox.appendChild(div);
-    chatBox.scrollTop=chatBox.scrollHeight;
-  }
-
-  function loadMessages(contactId){
-    currentContactId = contactId;
-    fetch(`/api/messages/${contactId}/`).then(res=>res.json()).then(data=>{
-      chatBox.innerHTML="";
-      if(!data.messages?.length){
-        chatBox.innerHTML="<div class='loading'>No messages yet.</div>"; return;
-      }
-      // ✅ WhatsApp style (oldest upar, latest niche)
-      data.messages.forEach(m=>appendMessage(m.sender||"User", m.text||""));
+    new Chart(document.getElementById('visitorsChart'), {
+      type:'bar',
+      data:{ labels:data.months||[], datasets:[{label:"Visitors",data:data.visitors_data||[],backgroundColor:"#2563eb"}] },
+      options:{responsive:true, scales:{y:{beginAtZero:true}}}
     });
-  }
-
-  function sendMessage(){
-    if(!currentContactId){ alert("Select a lead first"); return; }   
-    const text=msgInput.value.trim(); if(!text) return;
-    appendMessage("Admin",text); msgInput.value="";
-    fetch("/api/admin-send/",{
-      method:"POST", headers:{"Content-Type":"application/json"},
-      body:JSON.stringify({contact_id:currentContactId,message:text})
+    new Chart(document.getElementById('chatsChart'), {
+      type:'bar',
+      data:{ labels:data.months||[], datasets:[{label:"Active Chats",data:data.chats_data||[],backgroundColor:"#10b981"}] },
+      options:{responsive:true, scales:{y:{beginAtZero:true}}}
     });
-  }
-  sendBtn.addEventListener("click",sendMessage);
-  msgInput.addEventListener("keypress",e=>{ if(e.key==="Enter") sendMessage(); });
-
-  const evtSource=new EventSource("/api/lead-stream/");
-  evtSource.onmessage=function(event){
-    try{
-      const data=JSON.parse(event.data||"{}");
-      if(Number(data.contact_id)===Number(currentContactId)){
-        appendMessage(data.sender||"User", data.text||"[No content]");
-      }
-    }catch(e){}
-  };
-
-  // ================== Leads ==================
-  function loadLeads(){
-    fetch("/api/contacts/").then(res=>res.json()).then(data=>{
-      const leadList=document.getElementById("leadList");
-      leadList.innerHTML="";
-      if(!data.contacts?.length){ 
-        leadList.innerHTML="<div class='loading'>No leads found.</div>"; 
-        return; 
-      }
-      data.contacts.forEach(c=>{
-        const div=document.createElement("div");
-        div.className="lead-item";
-        div.innerText=(c.contact_value||"Unknown")+" ("+(c.contact_type||"temp")+")";
-        div.onclick=()=>{ loadMessages(c.id); };
-
-        // ✅ Normal append (backend already latest-first)
-        leadList.appendChild(div);
-      });
+    const demoPieData = [25, 15, 20, 10, 30];
+    new Chart(document.getElementById('pageViewsChart'), {
+      type:'pie',
+      data:{ labels:["Home","Products","About","Contact","Blog"], datasets:[{ data:demoPieData, backgroundColor:["#2563eb","#10b981","#f59e0b","#ef4444","#8b5cf6"] }] },
+      options:{responsive:true}
     });
-  }
+  }catch(err){ console.error("Dashboard load error:",err); }
+}
 
-  loadDashboardData();
-  loadLeads();
-  loadLocation();
+// ================= Chat Section =================
+let currentContactId = null;
+const chatBox = document.getElementById("chatBox");
+const msgInput = document.getElementById("chatInput");
+const sendBtn = document.getElementById("sendBtn");
+
+function appendMessage(sender,message){
+  const div = document.createElement("div");
+  div.className = "msg " + (sender.toLowerCase()==="admin" ? "admin" : "user");
+  div.innerHTML = message;
+  chatBox.appendChild(div);
+  chatBox.scrollTop = chatBox.scrollHeight;
+}
+
+function loadMessages(contactId){
+  currentContactId = contactId;
+  fetch(`/api/messages/${contactId}/`).then(res=>res.json()).then(data=>{
+    chatBox.innerHTML = "";
+    if(!data.messages?.length){ chatBox.innerHTML="<div class='loading'>No messages yet.</div>"; return; }
+    data.messages.slice().reverse().forEach(m=>appendMessage(m.sender||"User", m.text||""));
+  });
+}
+
+function sendMessage(){
+  if(!currentContactId){ alert("Select a lead first"); return; }   
+  const text = msgInput.value.trim();
+  if(!text) return;
+  appendMessage("Admin", text);
+  msgInput.value = "";
+
+  fetch("/api/admin-send/", {
+    method: "POST",
+    headers: {"Content-Type":"application/json"},
+    body: JSON.stringify({
+      contact_id: currentContactId,
+      message: text,
+      website_id: websiteId   // <-- important
+    })
+  });
+}
+
+// Send button and Enter key
+sendBtn.addEventListener("click", sendMessage);
+msgInput.addEventListener("keypress", e=>{ if(e.key==="Enter") sendMessage(); });
+
+// ================= EventSource for real-time =================
+const evtSource = new EventSource("/api/lead-stream/");
+evtSource.onmessage = function(event){ 
+  try{ 
+    const data = JSON.parse(event.data||"{}"); 
+    if(Number(data.contact_id) === Number(currentContactId)){
+      appendMessage(data.sender||"User", data.text||"[No content]");
+    } 
+  }catch(e){ console.error(e); }
+};
+
+// ================= Leads List =================
+function loadLeads(){
+  fetch(`/api/contacts/?website_id=${websiteId}`).then(res=>res.json()).then(data=>{
+    const leadList = document.getElementById("leadList"); 
+    leadList.innerHTML = "";
+    if(!data.contacts?.length){ leadList.innerHTML="<div class='loading'>No leads found.</div>"; return; }
+    data.contacts.slice().reverse().forEach(c=>{
+      const websiteName = c.website_url || c.website?.website_url || "Unknown Website";
+      const div = document.createElement("div");
+      div.className="lead-item"; 
+      div.innerText = (c.contact_value||"Unknown")+" ("+(c.contact_type||"temp")+")";
+      div.onclick = ()=>{ 
+        document.getElementById("currentWebsite").innerText = `Website: ${websiteName}`;
+        loadMessages(c.id); 
+      };
+      leadList.appendChild(div);
+    });
+  });
+}
+
+// Initial load
+loadDashboardData();
+loadLeads();
 </script>
+  
 </body>
 </html>
