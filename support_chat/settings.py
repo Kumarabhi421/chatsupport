@@ -89,10 +89,10 @@ WSGI_APPLICATION = 'support_chat.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'mychatdb_gnrk',
-        'USER': 'mychatdb_gnrk_user',
-        'PASSWORD': 'vzQpFxp8udAdMYIEV0UFLlDDNFdh6DxU',
-        'HOST': 'dpg-d3aga9bipnbc739iv1q0-a.oregon-postgres.render.com',
+        'NAME': 'mychatdb_bthk',
+        'USER': 'mychatdb_bthk_user',
+        'PASSWORD': 'JEzRcrQhjLuo0uPaMd06kwSdCaZeuUwk',
+        'HOST': 'dpg-d3drccggjchc73aq1gl0-a.render.com',
         'PORT': '5432',
         'OPTIONS': {
             'sslmode': 'require',
