@@ -155,7 +155,6 @@
 
 
 
-
 from django.db import models
 from django.utils import timezone
 from django.utils.crypto import get_random_string
@@ -344,4 +343,3 @@ class BotResponse(models.Model):
 
     def __str__(self):
         return f"[{self.website.website_id}] {self.keyword}"
-
