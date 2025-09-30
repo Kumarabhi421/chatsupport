@@ -12,8 +12,8 @@
       display:flex; align-items:center; justify-content:center;
     }
     .chat-container{
-      width:450px; height:500px;
-      background:rgba(255,255,255,.95);
+      width:350px; height:520px;
+      background:rgba(255,255,255,.9);
       border-radius:16px; overflow:hidden;
       box-shadow:0 10px 30px rgba(0,0,0,.25);
       display:flex; flex-direction:column;
@@ -41,17 +41,23 @@
 <body>
   <div class="chat-container">
     <div class="chat-header">
-      💬 Website Chat Support
+      💬 Welcome to UIS Chat Support
       <div class="token-info" id="tokenBox"></div>
     </div>
-    <div id="box" class="chat-messages"></div>
+    <div id="box" class="chat-messages">
+      <!-- Messages will load here -->
+    </div>
     <div class="chat-input">
       <input id="inp" type="text" placeholder="Type your message..." />
       <button id="sendBtn">Send</button>
     </div>
   </div>
 
- <script>
+  <script>
+    // 🔹 Set website_id dynamically per website
+    const WEBSITE_ID = window.WEBSITE_ID || null; // Backend should inject this
+    //  const WEBSITE_ID = window.WEBSITE_ID || 2;
+
     const box = document.getElementById('box');
     const inp = document.getElementById('inp');
     const sendBtn = document.getElementById('sendBtn');
@@ -59,17 +65,13 @@
 
     let contactId = null;
     const displayedMsgIds = new Set();
+    let _userStreamStarted = false;
+    let _userEvtSource = null;
     let initialGreetingAdded = false;
 
-    // 👇 Switch for blocking phone/email
-    let blockPhoneEmail = false; // true = block, false = allow
-
-    // Add message to chat
     function addMsg(text, who, id=null){
-      if(blockPhoneEmail){
-        const regex = /(\b\d{10,}\b|[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,})/ig;
-        if(regex.test(text)) return; // Phone/email block
-      }
+      const regex = /(\b\d{10,}\b|[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,})/ig;
+      if(regex.test(text)) return;
 
       if(id && displayedMsgIds.has(id)) return;
       if(id) displayedMsgIds.add(id);
@@ -81,33 +83,29 @@
       box.scrollTop = box.scrollHeight;
     }
 
-    // Send message to backend
     async function hit(message){
       const r = await fetch('/api/get-response/', {
         method:'POST',
         headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({message, contact_id: contactId})
+        body:JSON.stringify({message, contact_id: contactId, website_id: WEBSITE_ID})
       });
       return r.json();
     }
 
-    // On Send
     async function send(){
       const text = inp.value.trim();
       if(!text) return;
-
-      // 👇 frontend me turant show karo
-      addMsg(text, 'user', 'local-' + Date.now());
-
+      addMsg(text,'user');
       inp.value = '';
       try{
         const data = await hit(text);
         if(data && data.contact_id){
           contactId = data.contact_id;
-          tokenBox.textContent = "🆔 Your Token: " + contactId;
-          if(!initialGreetingAdded){
-            addMsg("🙏 Namaste! How can I help you today?", 'bot');
-            initialGreetingAdded = true;
+          // 🔹 Show token + website_id together
+          tokenBox.textContent = `🆔 Token: ${contactId} | Website: ${WEBSITE_ID || "local"}`;
+          if(!_userStreamStarted){
+            startUserStream(contactId);
+            _userStreamStarted = true;
           }
         }
       }catch(e){
@@ -118,43 +116,42 @@
     sendBtn.onclick = send;
     inp.addEventListener('keydown', (e)=>{ if(e.key==='Enter') send(); });
 
-    // Create/Load Contact on start
+    function startUserStream(cid){
+      if(_userEvtSource) _userEvtSource.close();
+      _userEvtSource = new EventSource(`/api/user-stream/${cid}/`);
+      _userEvtSource.onmessage = function(event){
+        try{
+          const data = JSON.parse(event.data || "{}");
+          if(Number(data.contact_id) === Number(cid)){
+            const who = (data.sender || "").toLowerCase() === "admin" ? "admin" :
+                        ((data.sender || "").toLowerCase() === "user" ? "user" : "bot");
+            addMsg(data.text || "", who, data.id);
+          }
+        }catch(e){ console.error("SSE parse error", e); }
+      };
+      _userEvtSource.onerror = function(err){ console.warn("SSE connection error", err); }
+
+      if(!initialGreetingAdded){
+        addMsg("Welcome! Reply to this message for assistance. We are online and ready to help.", 'bot');
+        initialGreetingAdded = true;
+      }
+    }
+
+    // 🔹 Create contact with website info
     fetch("/api/save-contact/", {
       method:"POST",
       headers:{"Content-Type":"application/json"},
-      body:JSON.stringify({})
+      body:JSON.stringify({ website_id: WEBSITE_ID })
     })
     .then(res => res.json())
     .then(data => {
       if(data && data.id){
         contactId = data.id;
-        tokenBox.textContent = "🆔 Your Token: " + contactId;
-        if(!initialGreetingAdded){
-          addMsg("Welcome to our urgent it solution Team, if you need help simply reply to this message, we are online and ready to help.", 'bot');
-          initialGreetingAdded = true;
-        }
+        tokenBox.textContent = `🆔 Token: ${contactId} | Website: ${WEBSITE_ID || "local"}`;
+        startUserStream(contactId);
+        _userStreamStarted = true;
       }
     });
-
-    // Poll messages every 3 sec
-    setInterval(() => {
-      if(contactId){
-        fetch(`/api/messages/${contactId}/`)
-          .then(res => res.json())
-          .then(data => {
-            (data.messages || []).forEach(msg => {
-              const sender = (msg.sender || "").toLowerCase();
-
-              // 👇 user ke messages ko skip karo (warna duplicate dikhte)
-              if(sender === "user") return;
-
-              const who = sender === "admin" ? "admin" : "bot";
-              addMsg(msg.text, who, msg.id);
-            });
-          })
-          .catch(err => console.error("Polling error:", err));
-      }
-    }, 3000);
-</script>
+  </script>
 </body>
 </html>
