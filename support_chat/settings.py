@@ -92,13 +92,14 @@ DATABASES = {
         'NAME': 'mychatdb_obts',
         'USER': 'mychatdb_obts_user',
         'PASSWORD': 'bnBzkF0ObG5PZf34PecHIwpuU4k6WqGq',
-        'HOST': 'dpg-d3ds5eodl3ps73c5ijng-a.render.com',
+        'HOST': 'dpg-d3ds5od13ps73c5ijng-a',   # ✅ fixed
         'PORT': '5432',
         'OPTIONS': {
             'sslmode': 'require',
         },
     }
 }
+
 
 # ================================
 # PASSWORD VALIDATION
