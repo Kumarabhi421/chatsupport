@@ -152,6 +152,26 @@
         _userStreamStarted = true;
       }
     });
+
+     // Poll messages every 3 sec
+    setInterval(() => {
+      if(contactId){
+        fetch(`/api/messages/${contactId}/`)
+          .then(res => res.json())
+          .then(data => {
+            (data.messages || []).forEach(msg => {
+              const sender = (msg.sender || "").toLowerCase();
+
+              // 👇 user ke messages ko skip karo (warna duplicate dikhte)
+              if(sender === "user") return;
+
+              const who = sender === "admin" ? "admin" : "bot";
+              addMsg(msg.text, who, msg.id);
+            });
+          })
+          .catch(err => console.error("Polling error:", err));
+      }
+    }, 3000);
   </script>
 </body>
 </html>
