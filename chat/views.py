@@ -714,28 +714,29 @@ from rest_framework import generics
 import json, difflib, re
 from queue import Queue
 
-from .models import (
-    Message, ContactInfo, WebsiteRegistration, Chat, BotResponse
-)
+from .models import ( Message, ContactInfo, WebsiteRegistration, Chat, BotResponse)
 from .serializers import MessageSerializer, WebsiteRegistrationSerializer
 
-
-import difflib
 from .models import WebsiteRegistration, BotResponse
 
+import difflib
+
 # ================= KEYWORD BOT =================
-def _best_reply(user_message: str, website_id: str = None) -> str:
+def _best_reply(user_message, website_id):
     """
-    ✅ Dynamic Bot Reply (Database se fetch karta hai)
-    - Agar website_id di gayi hai to us website ke keywords fetch karega
-    - Otherwise default generic reply return karega
+    Get the best bot reply based on website_id
+    Uses both exact keyword + fuzzy matching
     """
-    if not user_message:
-        return "Hello! How can I help you?"
 
-    user_message = user_message.lower().strip()
+    # ✅ Step 1: Check exact BotResponse keyword match
+    response = BotResponse.objects.filter(
+        website__website_id=website_id,
+        keyword__icontains=user_message
+    ).first()
+    if response:
+        return response.reply
 
-    # ✅ Website specific responses fetch karein (agar website_id diya gaya ho)
+    # ✅ Step 2: Collect all website-specific bot responses
     responses = {}
     if website_id:
         try:
@@ -747,7 +748,7 @@ def _best_reply(user_message: str, website_id: str = None) -> str:
         except WebsiteRegistration.DoesNotExist:
             pass
 
-    # Agar koi response hi nahi mila to fallback default response
+    # ✅ Step 3: If still no responses found → fallback defaults
     if not responses:
         responses = {
             "hello": "Hello! How can we help?",
@@ -755,18 +756,18 @@ def _best_reply(user_message: str, website_id: str = None) -> str:
             "contact": "You can contact us at info@urgentitsolution.com",
         }
 
-    # ✅ Fuzzy match (similar keywords match karega)
-    match = difflib.get_close_matches(user_message, responses.keys(), n=1, cutoff=0.6)
+    # ✅ Step 4: Fuzzy match (similar keywords)
+    match = difflib.get_close_matches(user_message.lower(), responses.keys(), n=1, cutoff=0.6)
     if match:
         return responses[match[0]]
 
-    # ✅ Substring check (agar keyword sentence me ho)
+    # ✅ Step 5: Substring check
     for key, reply in responses.items():
-        if key in user_message:
+        if key in user_message.lower():
             return reply
 
+    # ✅ Step 6: Final fallback
     return "Hello! How can I help you?"
-
 
 
 # ================= CONTACT INFO EXTRACTION =================
@@ -872,7 +873,6 @@ def admin_panel_view(request):
         "contacts": contacts,
         "website": website
     })
-
 # ================= SSE STREAM =================
 subscribers_admin = set()
 subscribers_user = {}
@@ -1039,6 +1039,7 @@ def get_response(request):
 def admin_reply(request):
     if request.method != "POST":
         return JsonResponse({"error": "Invalid method"}, status=405)
+
     try:
         data = json.loads(request.body or "{}")
     except json.JSONDecodeError:
@@ -1053,21 +1054,36 @@ def admin_reply(request):
         return JsonResponse({"error": "Missing contact_id/token or message"}, status=400)
 
     contact = None
+
+    # ✅ Contact fetch by ID + website
     if contact_id:
-        contact = ContactInfo.objects.filter(id=int(contact_id), website_id=website_id).first()
+        contact = ContactInfo.objects.filter(
+            id=int(contact_id),
+            website__website_id=website_id
+        ).first()
+
+    # ✅ Contact fetch by Token + website
     elif token:
         if isinstance(token, str) and token.upper().startswith("TKN-"):
             try:
                 possible_id = int(token.split("-", 1)[1])
-                contact = ContactInfo.objects.filter(id=possible_id, website_id=website_id).first()
+                contact = ContactInfo.objects.filter(
+                    id=possible_id,
+                    website__website_id=website_id
+                ).first()
             except Exception:
                 pass
+
         if not contact:
-            contact = ContactInfo.objects.filter(token_number=token, website_id=website_id).first()
+            contact = ContactInfo.objects.filter(
+                token_number=token,
+                website__website_id=website_id
+            ).first()
 
     if not contact:
         return JsonResponse({"error": "Contact not found"}, status=404)
 
+    # ✅ Ensure chat exists
     chat = Chat.objects.filter(contact=contact).last()
     if not chat:
         chat = Chat.objects.create(
@@ -1075,7 +1091,9 @@ def admin_reply(request):
             contact=contact
         )
 
+    # ✅ Save admin message
     msg = Message.objects.create(sender="admin", text=message, chat=chat)
+
     payload = {
         "id": msg.id,
         "contact_id": contact.id,
@@ -1084,10 +1102,14 @@ def admin_reply(request):
         "text": message,
         "timestamp": msg.timestamp.strftime("%Y-%m-%d %H:%M"),
     }
+
+    # ✅ Broadcast to user + admin
     _broadcast_user(contact.id, payload)
     _broadcast_admin(payload)
+
     return JsonResponse({"status": "success", "message": "Sent", "token": f"TKN-{contact.id}"})
 
+# alias
 admin_send_message = admin_reply
 
 # ================= MESSAGES API =================
@@ -1103,9 +1125,11 @@ class MessageListCreateView(generics.ListCreateAPIView):
 
 # ================= CONTACT API =================
 @csrf_exempt
+@csrf_exempt
 def save_contact(request):
     if request.method != "POST":
         return JsonResponse({"status": "error", "message": "Invalid request"}, status=405)
+
     try:
         if request.content_type and "application/json" in request.content_type:
             data = json.loads(request.body or "{}")
@@ -1126,32 +1150,49 @@ def save_contact(request):
             contact.mobile = contact_value
         elif contact_type == "email":
             contact.email = contact_value
+
         contact.contact_value = contact_value
         contact.contact_type = contact_type
+
         if website_id:
-            website = WebsiteRegistration.objects.filter(id=website_id).first()
+            website = WebsiteRegistration.objects.filter(website_id=website_id).first()
             if website:
                 contact.website = website
+
         contact.save()
         request.session["contact_saved"] = True
 
     return JsonResponse({"status": "success", "id": contact.id, "token": f"TKN-{contact.id}"})
 
+
 def get_contacts(request):
     website_id = request.GET.get("website_id")
     contacts_qs = ContactInfo.objects.all().order_by("-created_at")
     if website_id:
-        contacts_qs = contacts_qs.filter(website_id=website_id)
+        contacts_qs = contacts_qs.filter(website__website_id=website_id)
+
     contacts = list(contacts_qs.values(
         "id", "token_number", "mobile", "email", "contact_value", "created_at", "is_seen"
     ))
+
     for c in contacts:
         c["token"] = c.get("token_number") or f"TKN-{c['id']}"
+
     return JsonResponse({"contacts": contacts})
 
+
 def get_messages(request, contact_id):
+    website_id = request.GET.get("website_id")
+
     try:
-        contact = ContactInfo.objects.get(id=contact_id)
+        contact_qs = ContactInfo.objects.filter(id=contact_id)
+        if website_id:
+            contact_qs = contact_qs.filter(website__website_id=website_id)
+
+        contact = contact_qs.first()
+        if not contact:
+            return JsonResponse({"error": "Contact not found"}, status=404)
+
         messages_qs = Message.objects.filter(chat__contact=contact).order_by("timestamp")
         data = [
             {
@@ -1167,22 +1208,33 @@ def get_messages(request, contact_id):
             "token": f"TKN-{contact.id}",
             "token_number": contact.token_number,
         })
-    except ContactInfo.DoesNotExist:
-        return JsonResponse({"error": "Contact not found"}, status=404)
+
+    except Exception as e:
+        return JsonResponse({"error": str(e)}, status=400)
+
 
 # ================= STATS API =================
+
 from django.db.models import Count, Sum
 from django.db.models.functions import ExtractMonth, ExtractYear
 from django.utils import timezone
+from django.http import JsonResponse
+from datetime import datetime
+from calendar import monthrange
+from .models import ContactInfo, Message
 
 def stats(request):
     website_id = request.GET.get("website_id")
+    
+    # ✅ Base querysets
     contacts_qs = ContactInfo.objects.all()
     messages_qs = Message.objects.all()
-    if website_id:
-        contacts_qs = contacts_qs.filter(website_id=website_id)
-        messages_qs = messages_qs.filter(chat__contact__website_id=website_id)
 
+    if website_id:
+        contacts_qs = contacts_qs.filter(website__website_id=website_id)
+        messages_qs = messages_qs.filter(chat__contact__website__website_id=website_id)
+
+    # ✅ Totals
     total_contacts = contacts_qs.count()
     total_messages = messages_qs.count()
     total_visitors = contacts_qs.values("contact_value").distinct().count()
@@ -1193,36 +1245,47 @@ def stats(request):
 
     sender_stats = list(messages_qs.values("sender").annotate(total=Count("id")))
 
+    # ================= Monthly Data =================
     now = timezone.now()
-    visitors_by_month_qs = (
-        contacts_qs.annotate(y=ExtractYear('created_at'), m=ExtractMonth('created_at'))
-        .values('y', 'm').annotate(total=Count('id')).order_by('y', 'm')
-    )
-    messages_by_month_qs = (
-        messages_qs.annotate(y=ExtractYear('timestamp'), m=ExtractMonth('timestamp'))
-        .values('y', 'm').annotate(total=Count('id')).order_by('y', 'm')
-    )
-    pageviews_by_month_qs = (
-        contacts_qs.annotate(y=ExtractYear('created_at'), m=ExtractMonth('created_at'))
-        .values('y', 'm').annotate(total=Sum('page_views')).order_by('y', 'm')
-    )
-
-    vis_lookup = {f"{r['y']}-{int(r['m']):02d}": r['total'] for r in visitors_by_month_qs}
-    msg_lookup = {f"{r['y']}-{int(r['m']):02d}": r['total'] for r in messages_by_month_qs}
-    pv_lookup = {f"{r['y']}-{int(r['m']):02d}": r['total'] or 0 for r in pageviews_by_month_qs}
-
     months, visitors_data, chats_data, page_views_dist = [], [], [], []
-    for i in range(5, -1, -1):
-        target = now - timezone.timedelta(days=30 * i)
-        y, m = target.year, target.month
-        label = f"{y}-{m:02d}"
-        months.append(label)
-        visitors_data.append(vis_lookup.get(label, 0))
-        chats_data.append(msg_lookup.get(label, 0))
-        page_views_dist.append(pv_lookup.get(label, 0))
 
+    # Build last 6 months dynamically
+    for i in range(5, -1, -1):
+        # Get first and last day of month
+        year = now.year
+        month = now.month - i
+        if month <= 0:
+            month += 12
+            year -= 1
+        start_date = datetime(year, month, 1)
+        end_day = monthrange(year, month)[1]
+        end_date = datetime(year, month, end_day, 23, 59, 59)
+
+        label = f"{year}-{month:02d}"
+        months.append(label)
+
+        # Visitors in month
+        visitors_count = contacts_qs.filter(
+            created_at__gte=start_date, created_at__lte=end_date
+        ).count()
+        visitors_data.append(visitors_count)
+
+        # Messages in month
+        chats_count = messages_qs.filter(
+            timestamp__gte=start_date, timestamp__lte=end_date
+        ).count()
+        chats_data.append(chats_count)
+
+        # Page views in month
+        pv_count = contacts_qs.filter(
+            created_at__gte=start_date, created_at__lte=end_date
+        ).aggregate(total=Sum('page_views'))['total'] or 0
+        page_views_dist.append(pv_count)
+
+    # ✅ Feedback % calculation
     feedback_percent = (min(100, (total_contacts * 10) // total_messages) if total_messages else 0)
 
+    # ✅ Return JSON
     return JsonResponse({
         "total_visitors": total_visitors,
         "total_chats": total_chats,
@@ -1236,6 +1299,7 @@ def stats(request):
         "chats_data": chats_data,
         "page_views_dist": page_views_dist,
     })
+
 
 # ================= ADMIN PANEL =================
 def admin_panel(request):
@@ -1262,5 +1326,3 @@ def save_website(request):
         )
         return redirect("admin_panel")
     return JsonResponse({"status": "error", "message": "Invalid method"}, status=405)
-
-
