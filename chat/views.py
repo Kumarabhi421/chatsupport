@@ -838,7 +838,7 @@ def website_admin_login(request):
             return render(request, "chat/website_admin_login.html", {"website_url": site_input})
 
         if check_password(pwd, website.password):
-            request.session["website_admin_id"] = website.id
+            request.session["website_admin_id"] = website_id
             request.session["website_admin_url"] = website.website_url
             request.session["website_admin_login_at"] = str(timezone.now())
             return redirect("admin_panel")
@@ -870,10 +870,13 @@ def admin_panel_view(request):
         website=website
     ).prefetch_related("messages").order_by("-created_at")
 
-    return render(request, 'chat/admin_panel.html', {
+    context = {
         "contacts": contacts,
-        "website": website
-    })
+        "website": website,           # ✅ important
+        "website_id": website_id,     # ✅ optional: JS के लिए
+    }
+    return render(request, 'chat/admin_panel.html', context)
+
 # ================= SSE STREAM =================
 subscribers_admin = set()
 subscribers_user = {}
