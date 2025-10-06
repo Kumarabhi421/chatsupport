@@ -787,7 +787,8 @@ def extract_contact_info(text: str):
 
 # ================= FRONT VIEWS =================
 def chat_view(request):
-    return render(request, 'chat.html')
+    website_id = request.GET.get('website_id')
+    return render(request, 'chat.html', {'website_id': website_id})
 
 # ================= WEBSITE ADMIN REGISTER =================
 def website_admin_register(request):
