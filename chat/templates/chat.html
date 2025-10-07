@@ -93,7 +93,7 @@
       const r = await fetch('/api/get-response/', {
         method:'POST',
         headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({message, contact_id: contactId, website_id: WEBSITE_ID})
+        body:JSON.stringify({message, contact_id: contactId, website_id: website_id})
       });
       return r.json();
     }
@@ -108,7 +108,7 @@
         if(data && data.contact_id){
           contactId = data.contact_id;
           // 🔹 Show token + website_id together
-          tokenBox.textContent = `🆔 Token: ${contactId} | Website: ${WEBSITE_ID || "local"}`;
+          tokenBox.textContent = `🆔 Token: ${contactId} | Website: ${website_id || "local"}`;
           if(!_userStreamStarted){
             startUserStream(contactId);
             _userStreamStarted = true;
@@ -147,13 +147,13 @@
     fetch("/api/save-contact/", {
       method:"POST",
       headers:{"Content-Type":"application/json"},
-      body:JSON.stringify({ website_id: WEBSITE_ID })
+      body:JSON.stringify({ website_id: website_id })
     })
     .then(res => res.json())
     .then(data => {
       if(data && data.id){
         contactId = data.id;
-        tokenBox.textContent = `🆔 Token: ${contactId} | Website: ${WEBSITE_ID || "local"}`;
+        tokenBox.textContent = `🆔 Token: ${contactId} | Website: ${website_id || "local"}`;
         startUserStream(contactId);
         _userStreamStarted = true;
       }
