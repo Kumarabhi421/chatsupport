@@ -736,14 +736,29 @@ def extract_contact_info(text: str):
 #     website_id = "ocCzClIRkv"  # ya dynamic logic se pick karo
 #     return render(request, "chat.html", {"website_id": website_id})
 
+# def chat_view(request):
+#     host = request.get_host()  # example: "example.com:8000"
+#     try:
+#         website = WebsiteRegistration.objects.get(website_url__icontains=host)
+#         website_id = website.website_id
+#     except WebsiteRegistration.DoesNotExist:
+#         website_id = None  # fallback, ya show error
+#     return render(request, "chat.html", {"website_id": website_id})
+
 def chat_view(request):
-    host = request.get_host()  # example: "example.com:8000"
+    website_id = request.GET.get('website_id')
+    if not website_id:
+        return render(request, "error.html", {"message": "Website ID missing"})
+    
+    # Database में check करो कि website_id valid है या नहीं
+    from .models import WebsiteRegistration
     try:
-        website = WebsiteRegistration.objects.get(website_url__icontains=host)
-        website_id = website.website_id
+        website = WebsiteRegistration.objects.get(website_id=website_id)
     except WebsiteRegistration.DoesNotExist:
-        website_id = None  # fallback, ya show error
-    return render(request, "chat.html", {"website_id": website_id})
+        return render(request, "error.html", {"message": "Invalid Website ID"})
+    
+    # अगर valid है, तो chat widget page render करो
+    return render(request, "chat.html", {"website": website})
 
 # ================= WEBSITE ADMIN REGISTER =================
 def website_admin_register(request):
