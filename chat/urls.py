@@ -36,7 +36,7 @@ urlpatterns = [
     # ========================
     # 💬 Chat & User Facing APIs
     # ========================
-    path("", views.chat_view, name="chat_page"),                        # Chat page render
+    path("chat/", views.chat_view, name="chat_page"), # Chat page render
     path("api/get-response/", views.get_response, name="get_response"), # Bot/user chat API
     path("api/user-stream/<int:contact_id>/", views.user_stream, name="user_stream"), # SSE for users
 
