@@ -8,7 +8,7 @@ urlpatterns = [
     path('admin/', admin.site.urls),
 
     # Frontend Chat Page
-    path("chat/", include('chat.urls')),  
+    path('', include('chat.urls')),  
 
     # All API Endpoints will be under `/api/`
     path('api/', include('chat.urls')), 
