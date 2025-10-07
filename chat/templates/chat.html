@@ -75,9 +75,15 @@
     let _userEvtSource = null;
     let initialGreetingAdded = false;
 
+    // 👇 Switch for blocking phone/email
+    let blockPhoneEmail = false; // true = block, false = allow
+
+    // Add message to chat
     function addMsg(text, who, id=null){
-      const regex = /(\b\d{10,}\b|[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,})/ig;
-      if(regex.test(text)) return;
+      if(blockPhoneEmail){
+        const regex = /(\b\d{10,}\b|[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,})/ig;
+        if(regex.test(text)) return; // Phone/email block
+      }
 
       if(id && displayedMsgIds.has(id)) return;
       if(id) displayedMsgIds.add(id);
