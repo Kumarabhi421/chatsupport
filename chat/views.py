@@ -733,7 +733,7 @@ def extract_contact_info(text: str):
 
 # ================= FRONT VIEWS =================
 def chat_view(request):
-    website_id = "zYVFOTotO6"  # ya dynamic logic se pick karo
+    website_id = "ocCzClIRkv"  # ya dynamic logic se pick karo
     return render(request, "chat.html", {"website_id": website_id})
 
 # def chat_view(request):
