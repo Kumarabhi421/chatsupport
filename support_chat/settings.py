@@ -89,10 +89,10 @@ WSGI_APPLICATION = 'support_chat.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'mychatdb_obts',
-        'USER': 'mychatdb_obts_user',
-        'PASSWORD': 'bnBzkF0ObG5PZf34PecHIwpuU4k6WqGq',
-        'HOST': 'dpg-d3ds5eodl3ps73c5ijng-a.oregon-postgres.render.com',
+        'NAME': 'abhishek_uglu',
+        'USER': 'abhishek_uglu_user',
+        'PASSWORD': 'D1A6b1solRr025P3hgT3W98KJbOll2a5',
+        'HOST': 'dpg-d3ibcfc9c44c73al0alg-a.oregon-postgres.render.com',
         'PORT': '5432',
         'OPTIONS': {
             'sslmode': 'require',
