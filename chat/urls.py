@@ -58,6 +58,7 @@ urlpatterns = [
     path("api/save-contact/", views.save_contact, name="save_contact"), # Save user contact
     path("api/messages/", views.MessageListCreateView.as_view(), name="message_list_create"), # DRF messages list
     path("api/admin-send/", views.admin_send_message, name="admin_send_message"),   # Admin send message
+    path('api/save-bot-response/', views.save_bot_response, name='save_bot_response'),
 
     # ========================
     # 📊 Dashboard & Stats
@@ -67,9 +68,3 @@ urlpatterns = [
   # Website
     path("save-website/", views.save_website, name="save_website"),
 ]
-
-
-
-
-
-

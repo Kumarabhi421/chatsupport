@@ -697,8 +697,6 @@
 #             return reply
 #     return "Hello! How can I help you?"
 
-
-
 from django.shortcuts import render, redirect
 from django.views.decorators.csrf import csrf_exempt
 from django.core.validators import validate_email
@@ -708,66 +706,14 @@ from django.http import JsonResponse, StreamingHttpResponse
 from django.contrib import messages
 from django.contrib.auth.hashers import make_password, check_password
 from django.utils.crypto import get_random_string
-
 from rest_framework import generics
-
 import json, difflib, re
 from queue import Queue
-
 from .models import ( Message, ContactInfo, WebsiteRegistration, Chat, BotResponse)
 from .serializers import MessageSerializer, WebsiteRegistrationSerializer
 
 from .models import WebsiteRegistration, BotResponse
 
-import difflib
-
-# ================= KEYWORD BOT =================
-def _best_reply(user_message, website_id):
-    """
-    Get the best bot reply based on website_id
-    Uses both exact keyword + fuzzy matching
-    """
-
-    # ✅ Step 1: Check exact BotResponse keyword match
-    response = BotResponse.objects.filter(
-        website__website_id=website_id,
-        keyword__icontains=user_message
-    ).first()
-    if response:
-        return response.reply
-
-    # ✅ Step 2: Collect all website-specific bot responses
-    responses = {}
-    if website_id:
-        try:
-            website = WebsiteRegistration.objects.get(website_id=website_id)
-            responses = {
-                r.keyword.lower(): r.reply
-                for r in website.bot_responses.all()
-            }
-        except WebsiteRegistration.DoesNotExist:
-            pass
-
-    # ✅ Step 3: If still no responses found → fallback defaults
-    if not responses:
-        responses = {
-            "hello": "Hello! How can we help?",
-            "hi": "Hi there! How can we assist you?",
-            "contact": "You can contact us at info@urgentitsolution.com",
-        }
-
-    # ✅ Step 4: Fuzzy match (similar keywords)
-    match = difflib.get_close_matches(user_message.lower(), responses.keys(), n=1, cutoff=0.6)
-    if match:
-        return responses[match[0]]
-
-    # ✅ Step 5: Substring check
-    for key, reply in responses.items():
-        if key in user_message.lower():
-            return reply
-
-    # ✅ Step 6: Final fallback
-    return "Hello! How can I help you?"
 
 
 # ================= CONTACT INFO EXTRACTION =================
@@ -787,8 +733,17 @@ def extract_contact_info(text: str):
 
 # ================= FRONT VIEWS =================
 def chat_view(request):
-    website_id = request.GET.get('website_id')
-    return render(request, 'chat.html', {'website_id': website_id})
+    website_id = "ZWVhhTr5vE"  # ya dynamic logic se pick karo
+    return render(request, "chat.html", {"website_id": website_id})
+
+# def chat_view(request):
+#     host = request.get_host()  # example: "example.com:8000"
+#     try:
+#         website = WebsiteRegistration.objects.get(website_url__icontains=host)
+#         website_id = website.website_id
+#     except WebsiteRegistration.DoesNotExist:
+#         website_id = None  # fallback, ya show error
+#     return render(request, "chat.html", {"website_id": website_id})
 
 # ================= WEBSITE ADMIN REGISTER =================
 def website_admin_register(request):
@@ -838,7 +793,7 @@ def website_admin_login(request):
             return render(request, "chat/website_admin_login.html", {"website_url": site_input})
 
         if check_password(pwd, website.password):
-            request.session["website_admin_id"] = website_id
+            request.session["website_admin_id"] =  website.website_id
             request.session["website_admin_url"] = website.website_url
             request.session["website_admin_login_at"] = str(timezone.now())
             return redirect("admin_panel")
@@ -861,7 +816,8 @@ def admin_panel_view(request):
         return redirect("website_admin_login")
 
     try:
-        website = WebsiteRegistration.objects.get(id=website_id)
+        # Use custom string field, not auto-increment PK
+        website = WebsiteRegistration.objects.get(website_id=website_id)
     except WebsiteRegistration.DoesNotExist:
         request.session.flush()
         return redirect("website_admin_login")
@@ -870,42 +826,61 @@ def admin_panel_view(request):
         website=website
     ).prefetch_related("messages").order_by("-created_at")
 
-    context = {
-        "contacts": contacts,
-        "website": website,           # ✅ important
-        "website_id": website_id,     # ✅ optional: JS के लिए
-    }
-    return render(request, 'chat/admin_panel.html', context)
-
+    return render(request, 'chat/admin_panel.html', {
+    "contacts": contacts,
+    "website": website,
+    "website_id": website.website_id  # ✅ ye hona chahiye
+})
 # ================= SSE STREAM =================
-subscribers_admin = set()
-subscribers_user = {}
+# Website-wise admin subscribers
+subscribers_admin = {}  # { website_id: set(Queue) }
+subscribers_user = {}   # { contact_id: set(Queue) }
 
-def _broadcast_admin(payload: dict):
+# ===================================================
+# ✅ Broadcast for Admin (Website-wise isolation)
+# ===================================================
+def _broadcast_admin(payload: dict, website_id=None):
+    if not website_id:
+        return
+    if website_id not in subscribers_admin:
+        return
+
     dead = []
-    for q in list(subscribers_admin):
+    for q in list(subscribers_admin[website_id]):
         try:
             q.put(payload, timeout=0.1)
         except Exception:
             dead.append(q)
     for q in dead:
-        subscribers_admin.discard(q)
+        subscribers_admin[website_id].discard(q)
 
-def _broadcast_user(contact_id: int, payload: dict):
-    if contact_id in subscribers_user:
-        dead = []
-        for q in list(subscribers_user[contact_id]):
-            try:
-                q.put(payload, timeout=0.1)
-            except Exception:
-                dead.append(q)
-        for q in dead:
-            subscribers_user[contact_id].discard(q)
+# ===================================================
+# ✅ Broadcast for User (as per contact_id)
+# ===================================================
+def _broadcast_user(contact_id, payload: dict):
+    if contact_id not in subscribers_user:
+        return
 
+    dead = []
+    for q in list(subscribers_user[contact_id]):
+        try:
+            q.put(payload, timeout=0.1)
+        except Exception:
+            dead.append(q)
+    for q in dead:
+        subscribers_user[contact_id].discard(q)
+
+# ===================================================
+# ✅ Admin Stream (per-website connection)
+# ===================================================
 def lead_stream(request):
+    website_id = request.GET.get("website_id")
+    if not website_id:
+        return JsonResponse({"error": "Missing website_id"}, status=400)
+
     def event_stream():
         q = Queue()
-        subscribers_admin.add(q)
+        subscribers_admin.setdefault(website_id, set()).add(q)
         try:
             yield "event: ping\ndata: {}\n\n"
             while True:
@@ -914,11 +889,15 @@ def lead_stream(request):
         except GeneratorExit:
             pass
         finally:
-            subscribers_admin.discard(q)
+            subscribers_admin[website_id].discard(q)
+
     resp = StreamingHttpResponse(event_stream(), content_type="text/event-stream")
     resp["Cache-Control"] = "no-cache"
     return resp
 
+# ===================================================
+# ✅ User Stream (per-contact)
+# ===================================================
 def user_stream(request, contact_id):
     def event_stream():
         q = Queue()
@@ -932,11 +911,14 @@ def user_stream(request, contact_id):
             pass
         finally:
             subscribers_user[int(contact_id)].discard(q)
+
     resp = StreamingHttpResponse(event_stream(), content_type="text/event-stream")
     resp["Cache-Control"] = "no-cache"
     return resp
 
-# ================= CONTACT / CHAT LOGIC =================
+# ===================================================
+# ✅ CONTACT / CHAT LOGIC
+# ===================================================
 SERVER_START_TIME = timezone.now()
 
 def _get_or_create_contact(request, website_id=None) -> tuple:
@@ -968,12 +950,15 @@ def _get_or_create_contact(request, website_id=None) -> tuple:
 
     return contact, chat
 
-
+# ===================================================
+# ✅ CHAT API
+# ===================================================
 # ================= CHAT API =================
 @csrf_exempt
 def get_response(request):
     if request.method != "POST":
         return JsonResponse({"error": "Invalid method"}, status=405)
+
     try:
         data = json.loads(request.body or "{}")
     except json.JSONDecodeError:
@@ -984,6 +969,7 @@ def get_response(request):
     sender = (data.get('sender') or 'user').lower()
     contact, chat = _get_or_create_contact(request, website_id=website_id)
 
+    # ================= User Message =================
     if user_message:
         msg = Message.objects.create(sender=sender, text=user_message, chat=chat)
         payload_user = {
@@ -994,8 +980,10 @@ def get_response(request):
             "text": user_message,
             "timestamp": msg.timestamp.strftime("%Y-%m-%d %H:%M"),
         }
-        _broadcast_admin(payload_user)
+        # ✅ Broadcast only to admins of this website
+        _broadcast_admin(payload_user, website_id=website_id)
 
+    # ================= Contact Info Check =================
     if not request.session.get("contact_saved", False):
         mobile, email = extract_contact_info(user_message)
         if mobile or email:
@@ -1020,9 +1008,8 @@ def get_response(request):
                 reply = "Alright 👍 let's continue."
     else:
         reply = _best_reply(user_message.lower(), website_id=website_id)
-        
 
-
+    # ================= Bot Reply =================
     bot_msg = Message.objects.create(sender="bot", text=reply, chat=chat)
     payload_bot = {
         "id": bot_msg.id,
@@ -1032,10 +1019,15 @@ def get_response(request):
         "text": reply,
         "timestamp": bot_msg.timestamp.strftime("%Y-%m-%d %H:%M"),
     }
-    _broadcast_admin(payload_bot)
+
+    _broadcast_admin(payload_bot, website_id=website_id)
     _broadcast_user(contact.id, payload_bot)
 
-    return JsonResponse({"reply": reply, "contact_id": contact.id, "token": f"TKN-{contact.id}"})
+    return JsonResponse({
+        "reply": reply,
+        "contact_id": contact.id,
+        "token": f"TKN-{contact.id}"
+    })
 
 
 # ================= ADMIN REPLY =================
@@ -1059,14 +1051,14 @@ def admin_reply(request):
 
     contact = None
 
-    # ✅ Contact fetch by ID + website
+    # ✅ Fetch contact by ID + website
     if contact_id:
         contact = ContactInfo.objects.filter(
             id=int(contact_id),
             website__website_id=website_id
         ).first()
 
-    # ✅ Contact fetch by Token + website
+    # ✅ Fetch contact by Token + website
     elif token:
         if isinstance(token, str) and token.upper().startswith("TKN-"):
             try:
@@ -1087,7 +1079,7 @@ def admin_reply(request):
     if not contact:
         return JsonResponse({"error": "Contact not found"}, status=404)
 
-    # ✅ Ensure chat exists
+    # ✅ Create admin message
     chat = Chat.objects.filter(contact=contact).last()
     if not chat:
         chat = Chat.objects.create(
@@ -1095,9 +1087,7 @@ def admin_reply(request):
             contact=contact
         )
 
-    # ✅ Save admin message
     msg = Message.objects.create(sender="admin", text=message, chat=chat)
-
     payload = {
         "id": msg.id,
         "contact_id": contact.id,
@@ -1107,11 +1097,11 @@ def admin_reply(request):
         "timestamp": msg.timestamp.strftime("%Y-%m-%d %H:%M"),
     }
 
-    # ✅ Broadcast to user + admin
+    _broadcast_admin(payload, website_id=website_id)
     _broadcast_user(contact.id, payload)
-    _broadcast_admin(payload)
 
-    return JsonResponse({"status": "success", "message": "Sent", "token": f"TKN-{contact.id}"})
+    return JsonResponse({"status": "success", "message_id": msg.id})
+
 
 # alias
 admin_send_message = admin_reply
@@ -1308,11 +1298,17 @@ def stats(request):
 # ================= ADMIN PANEL =================
 def admin_panel(request):
     websites = WebsiteRegistration.objects.all()
+    
+    # Example: first website ko default select kar rahe hain
+    selected_website = websites.first() if websites.exists() else None
+    website_id = selected_website.website_id if selected_website else ""
+
     context = {
         "websites": websites,
-        
+        "website_id": website_id,   # ✅ Inject website_id to template
     }
     return render(request, "admin_panel.html", context)
+
 
 # ================= WEBSITE SAVE =================
 @csrf_exempt
@@ -1330,3 +1326,80 @@ def save_website(request):
         )
         return redirect("admin_panel")
     return JsonResponse({"status": "error", "message": "Invalid method"}, status=405)
+
+
+
+
+# ================= KEYWORD BOT =================
+def _best_reply(user_message, website_id):
+    """
+    Get the best bot reply based on website_id
+    Uses both exact keyword + fuzzy matching
+    """
+
+    # ✅ Step 1: Check exact BotResponse keyword match
+    response = BotResponse.objects.filter(
+        website__website_id=website_id,
+        keyword__icontains=user_message
+    ).first()
+    if response:
+        return response.reply
+
+    # ✅ Step 2: Collect all website-specific bot responses
+    responses = {}
+    if website_id:
+        try:
+            website = WebsiteRegistration.objects.get(website_id=website_id)
+            responses = {
+                r.keyword.lower(): r.reply
+                for r in website.bot_responses.all()
+            }
+        except WebsiteRegistration.DoesNotExist:
+            pass
+
+    # ✅ Step 3: If still no responses found → fallback defaults
+    if not responses:
+        responses = {
+            "hello": "Hello! How can we help?",
+            "hi": "Hi there! How can we assist you?",
+            "contact": "You can contact us at info@urgentitsolution.com",
+        }
+
+    # ✅ Step 4: Fuzzy match (similar keywords)
+    match = difflib.get_close_matches(user_message.lower(), responses.keys(), n=1, cutoff=0.6)
+    if match:
+        return responses[match[0]]
+
+    # ✅ Step 5: Substring check
+    for key, reply in responses.items():
+        if key in user_message.lower():
+            return reply
+
+    # ✅ Step 6: Final fallback
+    return "Hello! How can I help you?"
+
+@csrf_exempt
+def save_bot_response(request):
+    if request.method == "POST":
+        keyword = request.POST.get("keyword", "").strip()
+        reply = request.POST.get("reply", "").strip()
+        website_id = request.POST.get("website_id", "").strip()
+
+        if not all([keyword, reply, website_id]):
+            return JsonResponse({"status": "error", "msg": "सभी फील्ड भरें"})
+
+        try:
+            website = WebsiteRegistration.objects.get(website_id=website_id)
+        except WebsiteRegistration.DoesNotExist:
+            return JsonResponse({"status": "error", "msg": "Website नहीं मिला"})
+
+        # Save or update bot response
+        BotResponse.objects.update_or_create(
+            website=website,
+            keyword=keyword,
+            defaults={"reply": reply}
+        )
+
+        return JsonResponse({"status": "success", "msg": "Bot response सफलतापूर्वक save हुआ"})
+
+    return JsonResponse({"status": "error", "msg": "Invalid request"}, status=405)

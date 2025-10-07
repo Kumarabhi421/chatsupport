@@ -127,43 +127,129 @@
       </div>
     </div>
 
-       <!-- Profile -->
-    <div id="profile" class="section">
-      <h3 class="mb-4 fw-bold"><i class="bi bi-person-badge"></i> Profile Management</h3>
-      <div class="card shadow-sm border-0">
-        <div class="card-header bg-primary text-white d-flex align-items-center">
-          <i class="bi bi-globe2 me-2"></i>
-          <h6 class="mb-0">Website Management</h6>
+     <!-- Profile -->
+<div id="profile" class="section">
+  <h3 class="mb-4 fw-bold"><i class="bi bi-person-badge"></i> Profile Management</h3>
+
+  <!-- Website Management -->
+  <div class="card shadow-sm border-0">
+    <div class="card-header bg-primary text-white d-flex align-items-center">
+      <i class="bi bi-globe2 me-2"></i>
+      <h6 class="mb-0">Website Management</h6>
+    </div>
+    <div class="card-body">
+      <form method="post" action="/save-website/">
+        {% csrf_token %}
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label class="form-label fw-semibold"><i class="bi bi-hash"></i> Website ID</label>
+            <input type="text" class="form-control" value="" readonly placeholder="Auto-generated">
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold"><i class="bi bi-link-45deg"></i> Website URL</label>
+            <input type="url" class="form-control" name="website_url" placeholder="https://example.com" required>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold"><i class="bi bi-envelope"></i> Email</label>
+            <input type="email" class="form-control" name="email" placeholder="Enter email" required>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold"><i class="bi bi-lock"></i> Password</label>
+            <input type="password" class="form-control" name="password" placeholder="Enter password" required>
+          </div>
         </div>
-        <div class="card-body">
-          <form method="post" action="/save-website/">
-            {% csrf_token %}
-            <div class="row g-3">
-              <div class="col-md-6">
-                <label class="form-label fw-semibold"><i class="bi bi-hash"></i> Website ID</label>
-                <input type="text" class="form-control" value="" readonly placeholder="Auto-generated">
-              </div>
-              <div class="col-md-6">
-                <label class="form-label fw-semibold"><i class="bi bi-link-45deg"></i> Website URL</label>
-                <input type="url" class="form-control" name="website_url" placeholder="https://example.com" required>
-              </div>
-              <div class="col-md-6">
-                <label class="form-label fw-semibold"><i class="bi bi-envelope"></i> Email</label>
-                <input type="email" class="form-control" name="email" placeholder="Enter email" required>
-              </div>
-              <div class="col-md-6">
-                <label class="form-label fw-semibold"><i class="bi bi-lock"></i> Password</label>
-                <input type="password" class="form-control" name="password" placeholder="Enter password" required>
-              </div>
-            </div>
-            <div class="mt-3 text-end">
-              <button class="btn btn-success px-4" type="submit"><i class="bi bi-save"></i> Save Website</button>
-            </div>
-          </form>
+        <div class="mt-3 text-end">
+          <button class="btn btn-success px-4" type="submit"><i class="bi bi-save"></i> Save Website</button>
         </div>
-      </div>
+      </form>
     </div>
   </div>
+
+  <!-- 🧩 Divider / Section Gap -->
+  <div class="text-center my-5">
+    <hr class="border border-2 border-primary w-50 mx-auto opacity-75">
+    <span class="badge bg-primary fs-6 px-3 py-2 shadow-sm">Bot Settings Below</span>
+  </div>
+
+  <!-- 🔹 Bot Response Management -->
+<div class="card shadow-sm border-0">
+  <div class="card-header bg-primary text-white d-flex align-items-center">
+    <i class="bi bi-robot me-2"></i>
+    <h6 class="mb-0">Bot Response Management</h6>
+  </div>
+  <div class="card-body">
+    <form id="botResponseForm">
+      <div class="row g-3">
+        <div class="col-md-6">
+          <label class="form-label fw-semibold"><i class="bi bi-key"></i> Keyword</label>
+          <input type="text" id="keyword" class="form-control" placeholder="Enter keyword" required>
+        </div>
+        <div class="col-md-6">
+          <label class="form-label fw-semibold"><i class="bi bi-chat-dots"></i> Reply</label>
+          <input type="text" id="reply" class="form-control" placeholder="Enter bot reply" required>
+        </div>
+      </div>
+      <div class="text-end mt-3">
+        <button type="submit" class="btn btn-success px-4">
+          <i class="bi bi-save"></i> Save Bot Response
+        </button>
+      </div>
+    </form>
+
+    <!-- ✅ Success/Failure Message -->
+    <div id="botResponseMsg" class="mt-3"></div>
+  </div>
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    const form = document.getElementById("botResponseForm");
+    const msgDiv = document.getElementById("botResponseMsg");
+
+    // Django context variable से website_id
+    let website_id = "{{ website_id }}"; 
+
+    form.addEventListener("submit", function(e) {
+        e.preventDefault();
+
+        const keyword = document.getElementById("keyword").value.trim();
+        const reply = document.getElementById("reply").value.trim();
+
+        if (!keyword || !reply || !website_id) {
+            msgDiv.innerHTML = '<span class="text-danger">सभी फील्ड भरें।</span>';
+            return;
+        }
+
+        const data = new FormData();
+        data.append("keyword", keyword);
+        data.append("reply", reply);
+        data.append("website_id", website_id);
+
+        fetch("{% url 'save_bot_response' %}", {
+            method: "POST",
+            headers: {
+                "X-CSRFToken": "{{ csrf_token }}"
+            },
+            body: data
+        })
+        .then(res => res.json())
+        .then(res => {
+            if (res.status === "success") {
+                msgDiv.innerHTML = `<span class="text-success">${res.msg}</span>`;
+                form.reset();
+            } else {
+                msgDiv.innerHTML = `<span class="text-danger">${res.msg}</span>`;
+            }
+        })
+        .catch(err => {
+            console.error(err);
+            msgDiv.innerHTML = '<span class="text-danger">Error occurred. Try again.</span>';
+        });
+    });
+});
+</script>
+
+
 
 
   <!-- Scripts -->
@@ -251,7 +337,7 @@ sendBtn.addEventListener("click", sendMessage);
 msgInput.addEventListener("keypress", e=>{ if(e.key==="Enter") sendMessage(); });
 
 // ================= EventSource for real-time =================
-const evtSource = new EventSource("/api/lead-stream/");
+const evtSource = new EventSource(`/api/lead-stream/?website_id=${websiteId}`);
 evtSource.onmessage = function(event){ 
   try{ 
     const data = JSON.parse(event.data||"{}"); 

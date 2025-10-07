@@ -154,7 +154,6 @@
 
 
 
-
 from django.db import models
 from django.utils import timezone
 from django.utils.crypto import get_random_string
@@ -163,7 +162,7 @@ from django.utils.crypto import get_random_string
 # 🔑 Website Registration (Multi-Website Support)
 # ===========================
 class WebsiteRegistration(models.Model):
-    website_id = models.CharField(max_length=12, unique=True, db_index=True, blank=True)
+    website_id = models.CharField(max_length=12, primary_key=True, blank=True)  # ✅ string primary key
     website_url = models.URLField(unique=True)
     email = models.EmailField()
     password = models.CharField(max_length=255)
@@ -178,6 +177,7 @@ class WebsiteRegistration(models.Model):
     def __str__(self):
         return f"{self.website_url} ({self.website_id})"
 
+
 # ===========================
 # 🧑 Contact / Visitor Info
 # ===========================
@@ -191,6 +191,7 @@ class ContactInfo(models.Model):
 
     website = models.ForeignKey(
         WebsiteRegistration,
+        to_field="website_id",  # ✅ use string primary key
         on_delete=models.CASCADE,
         related_name="contacts",
         null=True,
@@ -200,12 +201,10 @@ class ContactInfo(models.Model):
     session_key = models.CharField(max_length=40, blank=True, null=True, db_index=True)
     contact_type = models.CharField(max_length=10, choices=CONTACT_TYPE_CHOICES, default="temp")
     contact_value = models.CharField(max_length=255, blank=True, null=True)
-
     ip_address = models.GenericIPAddressField(blank=True, null=True)
     mobile = models.CharField(max_length=20, blank=True, null=True)
     email = models.EmailField(blank=True, null=True)
     page_views = models.PositiveIntegerField(default=0)
-
     created_at = models.DateTimeField(auto_now_add=True)
     last_active = models.DateTimeField(default=timezone.now)
     user_agent = models.TextField(blank=True, null=True)
@@ -257,6 +256,7 @@ class ContactInfo(models.Model):
             count = ContactInfo.objects.filter(created_at__date=day).count()
             data.append({"date": str(day), "count": count})
         return data
+
 
 # ===========================
 # 💬 Chat & Messages
@@ -325,12 +325,12 @@ class VisitorLog(models.Model):
 
 
 
-# ===========================
-# 🤖 Bot Responses (Per Website)
-# ===========================
+
+
 class BotResponse(models.Model):
     website = models.ForeignKey(
         WebsiteRegistration,
+        to_field="website_id",  # ✅ string ForeignKey
         on_delete=models.CASCADE,
         related_name="bot_responses"
     )
@@ -338,7 +338,7 @@ class BotResponse(models.Model):
     reply = models.TextField()
 
     class Meta:
-        unique_together = ("website", "keyword")  # har website ka keyword unique ho
+        unique_together = ("website", "keyword")
         ordering = ["keyword"]
 
     def __str__(self):

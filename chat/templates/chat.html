@@ -55,10 +55,12 @@
 
   <script>
     // 🔹 Set website_id dynamically per website
-    // const WEBSITE_ID = window.WEBSITE_ID || null; // Backend should inject this
-     const WEBSITE_ID = window.WEBSITE_ID || 3;
-    // 🔹 Set website_id dynamically from URL (not from window.WEBSITE_ID)
-``
+    // const website_id = window.website_id || null; // Backend should inject this
+  
+    const website_id = "{{ website_id|default:'ZWVhhTr5vE' }}";
+    console.log("Website ID:", website_id); 
+    // const website_id = "{{ website_id }}";  // automatically backend se aayega
+    // console.log("Website ID:", website_id);
 
 
 
