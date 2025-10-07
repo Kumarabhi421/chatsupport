@@ -732,18 +732,18 @@ def extract_contact_info(text: str):
     return mobile, email
 
 # ================= FRONT VIEWS =================
-def chat_view(request):
-    website_id = "ocCzClIRkv"  # ya dynamic logic se pick karo
-    return render(request, "chat.html", {"website_id": website_id})
-
 # def chat_view(request):
-#     host = request.get_host()  # example: "example.com:8000"
-#     try:
-#         website = WebsiteRegistration.objects.get(website_url__icontains=host)
-#         website_id = website.website_id
-#     except WebsiteRegistration.DoesNotExist:
-#         website_id = None  # fallback, ya show error
+#     website_id = "ocCzClIRkv"  # ya dynamic logic se pick karo
 #     return render(request, "chat.html", {"website_id": website_id})
+
+def chat_view(request):
+    host = request.get_host()  # example: "example.com:8000"
+    try:
+        website = WebsiteRegistration.objects.get(website_url__icontains=host)
+        website_id = website.website_id
+    except WebsiteRegistration.DoesNotExist:
+        website_id = None  # fallback, ya show error
+    return render(request, "chat.html", {"website_id": website_id})
 
 # ================= WEBSITE ADMIN REGISTER =================
 def website_admin_register(request):

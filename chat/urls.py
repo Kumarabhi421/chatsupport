@@ -46,7 +46,7 @@ urlpatterns = [
    path("admin-login/", views.website_admin_login, name="website_admin_login"),
     path("admin-register/", views.website_admin_register, name="website_admin_register"),
     path("admin-logout/", views.website_admin_logout, name="website_admin_logout"),
-    path("admin-panel/", views.admin_panel_view, name="admin_panel"),
+
     # ========================
     # 🛠 Admin Panel (Protected) + APIs
     # ========================
