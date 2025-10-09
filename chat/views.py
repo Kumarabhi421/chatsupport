@@ -701,20 +701,15 @@ def save_bot_response(request):
 
 
 
-
-import json
 import requests
-from django.http import JsonResponse
 from django.utils import timezone
 from .models import WebsiteRegistration, ContactInfo, Chat
-from django.views.decorators.csrf import csrf_exempt
 from django.conf import settings
 
-# ================================================
-# ✅ Helper: Get Client IP
-# ================================================
+# ================================
+# Helper: Get Client IP
+# ================================
 def get_client_ip(request):
-    """Extract real IP from request headers"""
     x_forwarded_for = request.META.get("HTTP_X_FORWARDED_FOR")
     if x_forwarded_for:
         ip = x_forwarded_for.split(",")[0].strip()
@@ -722,44 +717,43 @@ def get_client_ip(request):
         ip = request.META.get("REMOTE_ADDR")
     return ip
 
-
-# ================================================
-# ✅ Helper: Get Location from IP using Google Maps API
-# ================================================
+# ================================
+# Helper: Get Location from IP
+# ================================
 def get_location_from_ip(ip):
-    """Fetch approximate location (lat/lng + address) using Google API"""
+    # 1️⃣ Try Google API
     try:
-        api_key = settings.GOOGLE_MAPS_API_KEY
-        # Step 1: Get lat/lng
-        geo_url = f"https://www.googleapis.com/geolocation/v1/geolocate?key={api_key}"
+        geo_url = f"https://www.googleapis.com/geolocation/v1/geolocate?key={settings.GOOGLE_MAPS_API_KEY}"
         payload = {"considerIp": True}
-        response = requests.post(geo_url, json=payload, timeout=10)
-        data = response.json()
-
-        if "location" in data:
-            lat = data["location"]["lat"]
-            lng = data["location"]["lng"]
-
-            # Step 2: Get address from lat/lng
-            rev_url = f"https://maps.googleapis.com/maps/api/geocode/json?latlng={lat},{lng}&key={api_key}"
-            rev_res = requests.get(rev_url, timeout=10).json()
-            address = (
-                rev_res["results"][0]["formatted_address"]
-                if rev_res.get("results")
-                else "Unknown"
-            )
-
+        res = requests.post(geo_url, json=payload, timeout=5).json()
+        if "location" in res:
+            lat = res["location"]["lat"]
+            lng = res["location"]["lng"]
+            # Reverse Geocode
+            rev_res = requests.get(
+                f"https://maps.googleapis.com/maps/api/geocode/json?latlng={lat},{lng}&key={settings.GOOGLE_MAPS_API_KEY}",
+                timeout=5
+            ).json()
+            address = rev_res["results"][0]["formatted_address"] if rev_res.get("results") else "Unknown"
             return {"lat": lat, "lng": lng, "address": address}
-        return None
     except Exception as e:
-        print("❌ Location Fetch Error:", e)
-        return None
+        print("Google API failed:", e)
 
+    # 2️⃣ Fallback ipinfo.io
+    try:
+        res = requests.get(f"https://ipinfo.io/{ip}/json", timeout=5).json()
+        city = res.get("city")
+        region = res.get("region")
+        country = res.get("country")
+        address = ", ".join(filter(None, [city, region, country])) or "Unknown"
+        return {"lat": None, "lng": None, "address": address}
+    except Exception as e:
+        print("Fallback failed:", e)
+        return {"lat": None, "lng": None, "address": "Unknown"}
 
-# ================================================
-# ✅ Get or Create Contact + Chat with IP & Location
-# ================================================
-
+# ================================
+# Main: Get or Create Contact + Chat
+# ================================
 def _get_or_create_contact(request, website_id=None):
     if not request.session.session_key:
         request.session.create()
@@ -767,25 +761,23 @@ def _get_or_create_contact(request, website_id=None):
     contact_id = request.session.get("contact_id")
     session_start = request.session.get("session_start")
 
-    # ✅ Website instance
+    # Website instance
     website = WebsiteRegistration.objects.filter(website_id=website_id).first() if website_id else None
 
-    # ✅ Try to get existing contact
+    # Existing contact
     contact = ContactInfo.objects.filter(id=contact_id).first() if contact_id else None
 
-    # ✅ Create new contact if not found or old session
-    if not contact or not session_start or timezone.datetime.fromisoformat(session_start) < SERVER_START_TIME.replace(tzinfo=None):
+    # Create new contact if not found or old session
+    if not contact or not session_start:
         contact = ContactInfo.objects.create(contact_type="temp", website=website)
         request.session["contact_id"] = contact.id
-        request.session["session_start"] = str(SERVER_START_TIME)
+        request.session["session_start"] = str(timezone.now())
         request.session["ask_count"] = 0
         request.session["contact_saved"] = False
 
-        # 🌐 IP address
+        # IP and Location
         ip = get_client_ip(request)
         contact.ip_address = ip
-
-        # 📍 Location (optional)
         location = get_location_from_ip(ip)
         if location:
             contact.latitude = location.get("lat")
@@ -794,7 +786,7 @@ def _get_or_create_contact(request, website_id=None):
 
         contact.save()
 
-    # ✅ Chat create if not exist
+    # Chat create if not exist
     chat = Chat.objects.filter(contact=contact).last()
     if not chat:
         chat = Chat.objects.create(
@@ -804,4 +796,3 @@ def _get_or_create_contact(request, website_id=None):
         )
 
     return contact, chat
-
