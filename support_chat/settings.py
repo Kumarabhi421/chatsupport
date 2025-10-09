@@ -126,6 +126,10 @@ STATIC_ROOT = BASE_DIR / "staticfiles"
 
 STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 
+
+GOOGLE_MAPS_API_KEY = "AIzaSyCD54a2NTB1zwdO7V8xwTpOC7Cdw5eQ7L8"
+
+
 # ================================
 # CORS Settings
 # ================================
