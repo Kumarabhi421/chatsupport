@@ -360,11 +360,13 @@ function loadLeads(){
 
 // ========= location
 
-      const locationInfo = c.location ? `📍 ${c.location}` : '';
+// ========= location
+const locationInfo = c.location_name ? `📍 ${c.location_name}` : '📍 Unknown';
 div.innerHTML = `
   <div><strong>${c.contact_value || "Unknown"}</strong> <small>(${c.contact_type || "temp"})</small></div>
   <div style="font-size:0.8rem; color:#9ca3af;">${locationInfo}</div>
 `;
+
 
 
 
