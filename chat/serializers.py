@@ -29,8 +29,11 @@ class MessageSerializer(serializers.ModelSerializer):
 class ContactInfoSerializer(serializers.ModelSerializer):
     class Meta:
         model = ContactInfo
-        fields = ['id', 'token_number', 'contact_type', 'contact_value', 
-                  'ip_address', 'mobile', 'email', 'created_at', 'is_seen']
+        fields = ['id', 'token_number', 'contact_type', 'contact_value',
+            'ip_address', 'mobile', 'email', 'created_at', 'is_seen',
+            'location_name',  # ✅ Add this
+            'latitude',       # ✅ Add this
+            'longitude', ]
 
 # ----------------- Website Registration -----------------
 class WebsiteRegistrationSerializer(serializers.ModelSerializer):

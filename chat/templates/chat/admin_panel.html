@@ -358,10 +358,18 @@ function loadLeads(){
       const div = document.createElement("div");
       div.className="lead-item"; 
 
-// ========= location
+// ========= location with clickable map
+let locationInfo = "📍 Unknown";
+if(c.location_name) {
+  const lat = c.latitude;
+  const lng = c.longitude;
+  if(lat && lng) {
+    locationInfo = `📍 <a href="https://www.google.com/maps?q=${lat},${lng}" target="_blank">${c.location_name}</a>`;
+  } else {
+    locationInfo = `📍 ${c.location_name}`;
+  }
+}
 
-// ========= location
-const locationInfo = c.location_name ? `📍 ${c.location_name}` : '📍 Unknown';
 div.innerHTML = `
   <div><strong>${c.contact_value || "Unknown"}</strong> <small>(${c.contact_type || "temp"})</small></div>
   <div style="font-size:0.8rem; color:#9ca3af;">${locationInfo}</div>

@@ -626,20 +626,13 @@ def save_website(request):
 
 # ================= KEYWORD BOT =================
 def _best_reply(user_message, website_id):
-    """
-    Get the best bot reply based on website_id
-    Uses both exact keyword + fuzzy matching
-    """
-
-    # ✅ Step 1: Check exact BotResponse keyword match
+    
     response = BotResponse.objects.filter(
         website__website_id=website_id,
         keyword__icontains=user_message
     ).first()
     if response:
         return response.reply
-
-    # ✅ Step 2: Collect all website-specific bot responses
     responses = {}
     if website_id:
         try:
@@ -650,26 +643,19 @@ def _best_reply(user_message, website_id):
             }
         except WebsiteRegistration.DoesNotExist:
             pass
-
-    # ✅ Step 3: If still no responses found → fallback defaults
     if not responses:
         responses = {
             "hello": "Hello! How can we help?",
             "hi": "Hi there! How can we assist you?",
             "contact": "You can contact us at info@urgentitsolution.com",
         }
-
-    # ✅ Step 4: Fuzzy match (similar keywords)
     match = difflib.get_close_matches(user_message.lower(), responses.keys(), n=1, cutoff=0.6)
     if match:
         return responses[match[0]]
-
-    # ✅ Step 5: Substring check
     for key, reply in responses.items():
         if key in user_message.lower():
             return reply
 
-    # ✅ Step 6: Final fallback
     return "Hello! How can I help you?"
 
 @csrf_exempt
@@ -700,7 +686,6 @@ def save_bot_response(request):
 
 
 
-
 import requests
 from django.utils import timezone
 from .models import WebsiteRegistration, ContactInfo, Chat
@@ -718,37 +703,29 @@ def get_client_ip(request):
     return ip
 
 # ================================
-# Helper: Get Location from IP
+# Helper: Get Location from IP (Google API Only)
 # ================================
 def get_location_from_ip(ip):
-    # 1️⃣ Try Google API
     try:
         geo_url = f"https://www.googleapis.com/geolocation/v1/geolocate?key={settings.GOOGLE_MAPS_API_KEY}"
         payload = {"considerIp": True}
         res = requests.post(geo_url, json=payload, timeout=5).json()
-        if "location" in res:
-            lat = res["location"]["lat"]
-            lng = res["location"]["lng"]
-            # Reverse Geocode
-            rev_res = requests.get(
-                f"https://maps.googleapis.com/maps/api/geocode/json?latlng={lat},{lng}&key={settings.GOOGLE_MAPS_API_KEY}",
-                timeout=5
-            ).json()
-            address = rev_res["results"][0]["formatted_address"] if rev_res.get("results") else "Unknown"
-            return {"lat": lat, "lng": lng, "address": address}
+
+        if "location" not in res:
+            return {"lat": None, "lng": None, "address": "Unknown"}
+
+        lat = res["location"]["lat"]
+        lng = res["location"]["lng"]
+
+        # Reverse geocode for human-readable address
+        rev_url = f"https://maps.googleapis.com/maps/api/geocode/json?latlng={lat},{lng}&key={settings.GOOGLE_MAPS_API_KEY}"
+        rev_res = requests.get(rev_url, timeout=5).json()
+        address = rev_res["results"][0]["formatted_address"] if rev_res.get("results") else "Unknown"
+
+        return {"lat": lat, "lng": lng, "address": address}
+
     except Exception as e:
         print("Google API failed:", e)
-
-    # 2️⃣ Fallback ipinfo.io
-    try:
-        res = requests.get(f"https://ipinfo.io/{ip}/json", timeout=5).json()
-        city = res.get("city")
-        region = res.get("region")
-        country = res.get("country")
-        address = ", ".join(filter(None, [city, region, country])) or "Unknown"
-        return {"lat": None, "lng": None, "address": address}
-    except Exception as e:
-        print("Fallback failed:", e)
         return {"lat": None, "lng": None, "address": "Unknown"}
 
 # ================================
@@ -775,15 +752,13 @@ def _get_or_create_contact(request, website_id=None):
         request.session["ask_count"] = 0
         request.session["contact_saved"] = False
 
-        # IP and Location
+        # IP and Google Location
         ip = get_client_ip(request)
         contact.ip_address = ip
         location = get_location_from_ip(ip)
-        if location:
-            contact.latitude = location.get("lat")
-            contact.longitude = location.get("lng")
-            contact.location_name = location.get("address") or "Unknown"
-
+        contact.latitude = location.get("lat")
+        contact.longitude = location.get("lng")
+        contact.location_name = location.get("address") or "Unknown"
         contact.save()
 
     # Chat create if not exist
