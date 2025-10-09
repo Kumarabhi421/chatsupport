@@ -43,7 +43,6 @@ INSTALLED_APPS = [
     # Third party apps
     'corsheaders',
     'rest_framework',
-    'ipware',
 
     # Your apps
     'chat',

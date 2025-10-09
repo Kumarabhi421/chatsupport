@@ -1,6 +1,5 @@
 Django==5.2.6
 djangorestframework==3.16.1
-django-ipware==7.0.1
 django-cors-headers==4.7.0
 django-crispy-forms==2.4
 geoip2==5.1.0

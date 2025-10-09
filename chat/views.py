@@ -215,34 +215,34 @@ def user_stream(request, contact_id):
 # ===================================================
 SERVER_START_TIME = timezone.now()
 
-def _get_or_create_contact(request, website_id=None) -> tuple:
-    if not request.session.session_key:
-        request.session.create()
+# def _get_or_create_contact(request, website_id=None) -> tuple:
+#     if not request.session.session_key:
+#         request.session.create()
 
-    contact_id = request.session.get("contact_id")
-    session_start = request.session.get("session_start")
+#     contact_id = request.session.get("contact_id")
+#     session_start = request.session.get("session_start")
 
-    website = None
-    if website_id:
-        website = WebsiteRegistration.objects.filter(website_id=website_id).first()
+#     website = None
+#     if website_id:
+#         website = WebsiteRegistration.objects.filter(website_id=website_id).first()
 
-    contact = ContactInfo.objects.filter(id=contact_id).first() if contact_id else None
+#     contact = ContactInfo.objects.filter(id=contact_id).first() if contact_id else None
 
-    if (not contact) or (not session_start) or (timezone.datetime.fromisoformat(session_start) < SERVER_START_TIME):
-        contact = ContactInfo.objects.create(contact_type="temp", website=website)
-        request.session["contact_id"] = contact.id
-        request.session["session_start"] = str(SERVER_START_TIME)
-        request.session["ask_count"] = 0
-        request.session["contact_saved"] = False
+#     if (not contact) or (not session_start) or (timezone.datetime.fromisoformat(session_start) < SERVER_START_TIME):
+#         contact = ContactInfo.objects.create(contact_type="temp", website=website)
+#         request.session["contact_id"] = contact.id
+#         request.session["session_start"] = str(SERVER_START_TIME)
+#         request.session["ask_count"] = 0
+#         request.session["contact_saved"] = False
 
-    chat = Chat.objects.filter(contact=contact).last()
-    if not chat:
-        chat = Chat.objects.create(
-            chat_id=f"CHAT-{contact.id}-{timezone.now().strftime('%Y%m%d%H%M%S')}",
-            contact=contact
-        )
+#     chat = Chat.objects.filter(contact=contact).last()
+#     if not chat:
+#         chat = Chat.objects.create(
+#             chat_id=f"CHAT-{contact.id}-{timezone.now().strftime('%Y%m%d%H%M%S')}",
+#             contact=contact
+#         )
 
-    return contact, chat
+#     return contact, chat
 
 # ===================================================
 # ✅ CHAT API
@@ -701,25 +701,103 @@ def save_bot_response(request):
 
 
 
-import requests
 
-def get_location_from_ip(ip_address):
+import json
+import requests
+from django.http import JsonResponse
+from django.utils import timezone
+from .models import WebsiteRegistration, ContactInfo, Chat
+from django.views.decorators.csrf import csrf_exempt
+from django.conf import settings
+
+# ================================================
+# ✅ Helper: Get Client IP
+# ================================================
+def get_client_ip(request):
+    """Extract real IP from request headers"""
+    x_forwarded_for = request.META.get("HTTP_X_FORWARDED_FOR")
+    if x_forwarded_for:
+        ip = x_forwarded_for.split(",")[0]
+    else:
+        ip = request.META.get("REMOTE_ADDR")
+    return ip
+
+
+# ================================================
+# ✅ Helper: Get Location from IP using Google Maps API
+# ================================================
+def get_location_from_ip(ip):
+    """Fetch approximate location (lat/lng + address) from IP"""
     try:
-        API_KEY = "AIzaSyCD54a2NTB1zwdO7V8xwTpOC7Cdw5eQ7L8"
-        url = f"https://www.googleapis.com/geolocation/v1/geolocate?key={API_KEY}"
-        payload = {"considerIp": True}
-        res = requests.post(url, json=payload)
-        if res.status_code == 200:
-            data = res.json()
+        # Google Geolocation API
+        api_key = settings.GOOGLE_MAPS_API_KEY
+        url = f"https://www.googleapis.com/geolocation/v1/geolocate?key={api_key}"
+
+        # Usually Google expects some payload; IP lookup can also use third-party IP data
+        payload = {"considerIp": "true"}
+        response = requests.post(url, json=payload)
+        data = response.json()
+
+        if "location" in data:
             lat = data["location"]["lat"]
             lng = data["location"]["lng"]
 
-            # Reverse geocode (to get city/state)
-            geo_url = f"https://maps.googleapis.com/maps/api/geocode/json?latlng={lat},{lng}&key={API_KEY}"
-            g = requests.get(geo_url).json()
-            address = g["results"][0]["formatted_address"] if g["results"] else None
+            # Reverse geocode for readable address
+            geo_url = f"https://maps.googleapis.com/maps/api/geocode/json?latlng={lat},{lng}&key={api_key}"
+            geo_res = requests.get(geo_url).json()
+            address = geo_res["results"][0]["formatted_address"] if geo_res.get("results") else "Unknown"
 
             return {"lat": lat, "lng": lng, "address": address}
+        else:
+            return None
     except Exception as e:
-        print("Geo error:", e)
-    return None
+        print("Location error:", e)
+        return None
+
+
+# ================================================
+# ✅ Get or Create Contact with IP + Location
+# ================================================
+def _get_or_create_contact(request, website_id=None) -> tuple:
+    if not request.session.session_key:
+        request.session.create()
+
+    contact_id = request.session.get("contact_id")
+    session_start = request.session.get("session_start")
+
+    website = None
+    if website_id:
+        website = WebsiteRegistration.objects.filter(website_id=website_id).first()
+
+    contact = ContactInfo.objects.filter(id=contact_id).first() if contact_id else None
+
+    # Recreate contact if not exists or session expired
+    if (not contact) or (not session_start) or (timezone.datetime.fromisoformat(session_start) < SERVER_START_TIME):
+        contact = ContactInfo.objects.create(contact_type="temp", website=website)
+        request.session["contact_id"] = contact.id
+        request.session["session_start"] = str(SERVER_START_TIME)
+        request.session["ask_count"] = 0
+        request.session["contact_saved"] = False
+
+        # ✅ Get user IP
+        ip = get_client_ip(request)
+        contact.ip_address = ip
+
+        # ✅ Fetch location (using Google API)
+        location = get_location_from_ip(ip)
+        if location:
+            contact.latitude = location.get("lat")
+            contact.longitude = location.get("lng")
+            contact.location = location.get("address") or "Unknown"
+        contact.save()
+
+    # ✅ Get or create Chat for this contact
+    chat = Chat.objects.filter(contact=contact).last()
+    if not chat:
+        chat = Chat.objects.create(
+            chat_id=f"CHAT-{contact.id}-{timezone.now().strftime('%Y%m%d%H%M%S')}",
+            contact=contact,
+            ip_address=contact.ip_address
+        )
+
+    return contact, chat
