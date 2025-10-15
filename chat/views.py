@@ -17,8 +17,6 @@ from .serializers import MessageSerializer, WebsiteRegistrationSerializer
 
 from .models import WebsiteRegistration, BotResponse
 
-
-
 # ================= CONTACT INFO EXTRACTION =================
 def extract_contact_info(text: str):
     mobile_pattern = r"\b\d{10}\b"
@@ -41,6 +39,7 @@ def chat_view(request):
 
 # ================= WEBSITE ADMIN REGISTER =================
 def website_admin_register(request):
+def website_admin_register(request):
     if request.method == "POST":
         url = (request.POST.get("website_url") or "").strip()
         email = (request.POST.get("email") or "").strip()
@@ -53,21 +52,34 @@ def website_admin_register(request):
         if WebsiteRegistration.objects.filter(website_url__iexact=url).exists():
             messages.error(request, "Website already registered.")
             return redirect("website_admin_login")
+
         if WebsiteRegistration.objects.filter(email__iexact=email).exists():
             messages.error(request, "Email already registered.")
             return redirect("website_admin_login")
 
+        # ✅ Unique website_id
         website_id = get_random_string(10)
-        website = WebsiteRegistration(
+
+        # ✅ Save website info
+        website = WebsiteRegistration.objects.create(
             website_id=website_id,
             website_url=url,
             email=email,
             password=make_password(pwd)
         )
-        website.save()
-        messages.success(request, "Registration successful! Please login now.")
-        return redirect("website_admin_login")
+
+        # ✅ Chat widget URL for this website
+        chat_url = f"https://indiascrapix.co.in/chat/?website_id={website_id}"
+
+        # ✅ Pass data to success template
+        return render(request, "chat/registration_success.html", {
+            "website_id": website_id,
+            "chat_url": chat_url,
+            "email": email
+        })
+
     return redirect("website_admin_login")
+
 
 # ================= WEBSITE ADMIN LOGIN =================
 def website_admin_login(request):
@@ -215,38 +227,6 @@ def user_stream(request, contact_id):
 # ===================================================
 SERVER_START_TIME = timezone.now()
 
-# def _get_or_create_contact(request, website_id=None) -> tuple:
-#     if not request.session.session_key:
-#         request.session.create()
-
-#     contact_id = request.session.get("contact_id")
-#     session_start = request.session.get("session_start")
-
-#     website = None
-#     if website_id:
-#         website = WebsiteRegistration.objects.filter(website_id=website_id).first()
-
-#     contact = ContactInfo.objects.filter(id=contact_id).first() if contact_id else None
-
-#     if (not contact) or (not session_start) or (timezone.datetime.fromisoformat(session_start) < SERVER_START_TIME):
-#         contact = ContactInfo.objects.create(contact_type="temp", website=website)
-#         request.session["contact_id"] = contact.id
-#         request.session["session_start"] = str(SERVER_START_TIME)
-#         request.session["ask_count"] = 0
-#         request.session["contact_saved"] = False
-
-#     chat = Chat.objects.filter(contact=contact).last()
-#     if not chat:
-#         chat = Chat.objects.create(
-#             chat_id=f"CHAT-{contact.id}-{timezone.now().strftime('%Y%m%d%H%M%S')}",
-#             contact=contact
-#         )
-
-#     return contact, chat
-
-# ===================================================
-# ✅ CHAT API
-# ===================================================
 # ================= CHAT API =================
 @csrf_exempt
 def get_response(request):
