@@ -39,7 +39,6 @@ def chat_view(request):
 
 # ================= WEBSITE ADMIN REGISTER =================
 def website_admin_register(request):
-def website_admin_register(request):
     if request.method == "POST":
         url = (request.POST.get("website_url") or "").strip()
         email = (request.POST.get("email") or "").strip()
